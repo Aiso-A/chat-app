@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Servidor Prueba</title>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <h1>Probando el Chat mediante servidor</h1>
+  <div id="messages"></div>
+  <input type="text" id="message" placeholder="Escribe un mensaje">
+  <button onclick="sendMessage()">Enviar</button>
+
+  <script>
+    const socket = io();
+
+    socket.on('mensaje', (msg) => {
+      const messageDiv = document.createElement('div');
+      messageDiv.textContent = msg;
+      document.getElementById('messages').appendChild(messageDiv);
+    });
+
+    function sendMessage() {
+      const message = document.getElementById('message').value;
+      socket.emit('mensaje', message);
+      document.getElementById('message').value = '';
+    }
+  </script>
+</body>
+</html>
