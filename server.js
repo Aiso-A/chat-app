@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const http = require('http');
 const io = require('socket.io')(http);
-const path = requiere('path')
+const path = require('path')
 
 // Servir archivos estáticos desde el frontend"
 app.use(express.static(path.join(__dirname, 'public')));
