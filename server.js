@@ -1,8 +1,8 @@
 const express = require('express');
 const app = express();
-const http = require('http');
+const http = require('http').createServer(app);
+const path = require('path');
 const io = require('socket.io')(http);
-const path = require('path')
 
 // Servir archivos estáticos desde el frontend"
 app.use(express.static(path.join(__dirname, 'public')));
@@ -28,5 +28,5 @@ io.on('connection', (socket) => {
 //  Para la escucha en el puerto asignado por Render o por defecto en local
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
+  console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
