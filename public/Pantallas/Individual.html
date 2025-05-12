@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ByteTalk - Chat Individual</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Exo+2:wght@800&family=Saira+Stencil+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="Individual.css">
+    <link rel="stylesheet" href="Sidebar.css">
+    <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
+</head>
+<body>
+
+    <!-- Menú lateral -->
+    <nav class="sidebar d-flex flex-column p-3">
+        <h2 class="app-title text-center">ByteTalk</h2>
+        <ul class="nav flex-column">
+            <li class="nav-item"><a href="Chats.html" class="nav-link">Volver a Chats</a></li>
+            <li class="nav-item"><a href="Perfil.html" class="nav-link">Perfil</a></li>
+            <li class="nav-item"><a href="Admin.html" class="nav-link">Tareas</a></li>
+            <li class="nav-item"><a href="LogIn.html" class="nav-link">Cerrar sesión</a></li>
+        </ul>
+    </nav>
+
+    <!-- Chat -->
+    <div class="container-fluid chat-container">
+
+        <div class="chat-header d-flex align-items-center p-3 justify-content-between">
+            <div class="d-flex align-items-center">
+                <div class="avatar"></div>
+                <h3 class="mb-0 ms-2">Nombre del Contacto</h3>
+            </div>
+            <a href="Videollamada.html" class="call-icon">
+                <i class="bx bx-video"></i>
+            </a>
+        </div>
+        
+        <!-- Mensajes -->
+        <div class="chat-messages p-3">
+            <div class="message received">
+                <p>¡Hola! ¿Cómo estás?</p>
+                <span class="time">10:30 AM</span>
+            </div>
+            <div class="message sent">
+                <p>¡Hola! Todo bien, ¿y tú?</p>
+                <span class="time">10:31 AM</span>
+            </div>
+        </div>
+        
+        <div class="chat-input d-flex p-3 align-items-center">
+            <button class="icon-btn"><i class="bx bx-image"></i></button>  
+            <button class="icon-btn"><i class="bx bx-microphone"></i></button>  
+            <button class="icon-btn"><i class="bx bx-paperclip"></i></button>
+            <button class="icon-btn"><i class="bx bx-smile"></i></button> 
+            <button class="icon-btn"><i class="bx bx-map"></i></button> 
+            <input type="text" id="messageInput" class="form-control me-2" placeholder="Escribe un mensaje...">
+            <button class="btn btn-primary" onclick="sendMessage()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        function sendMessage() {
+            let input = document.getElementById("messageInput");
+            let message = input.value.trim();
+
+            if (message !== "") {
+                let chatBox = document.querySelector(".chat-messages");
+                let newMessage = document.createElement("div");
+                newMessage.classList.add("message", "sent");
+                newMessage.innerHTML = `<p>${message}</p><span class="time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</span>`;
+                
+                chatBox.appendChild(newMessage);
+                input.value = "";
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
+

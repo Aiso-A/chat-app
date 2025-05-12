@@ -1,21 +1,23 @@
 const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
+const http = require('http');
+const io = requiere('socket.io')(http);
+const path = requiere('path')
 
-// Servir archivos estáticos desde la carpeta "public"
-app.use(express.static('public'));
+// Servir archivos estáticos desde el frontend"
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Conexión de sockets
+//Esto es la ruta principal, redirige al login si es que es necesario
+app.get('/', (req, res) =>{
+  res.sendFile(path.join(__dirname, 'public', 'LogIn.html'))
+})
+
+// Lógica del chat usando Socket.io
 io.on('connection', (socket) => {
-  console.log('Nuevo usuario conectado');
+  console.log('Un usuario se ha conectado');
 
-  socket.on('mensaje', (msg) => {
-    console.log('Mensaje recibido:', msg);
-    io.emit('mensaje', msg); // Enviar mensaje a todos los clientes
+  socket.on('chat message', (msg) => {
+    io.emit('chat message', msg); //Reenvía a todos el mensaje
   });
 
   socket.on('disconnect', () => {
@@ -23,7 +25,8 @@ io.on('connection', (socket) => {
   });
 });
 
-// Iniciar el servidor en el puerto 3000
-server.listen(3000, () => {
-  console.log('Servidor corriendo en http://localhost:3000');
+//  Para la escucha en el puerto asignado por Render o por defecto en local
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
 });

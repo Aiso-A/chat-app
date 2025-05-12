@@ -1,0 +1,93 @@
+body {
+    font-family: 'Roboto Mono', monospace;
+    background-color: #121212;
+    color: #fff;
+}
+
+/* Contenedor del perfil */
+.profile-container {
+    margin-left: 250px;
+    padding: 30px;
+}
+
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background-color: #00FFFF; 
+    display: inline-block;
+}
+
+
+.username {
+    font-family: 'Exo 2', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    color: #FF007F;
+}
+
+.full-name, .email {
+    font-size: 18px;
+    color: #ccc;
+}
+
+/* Estado */
+.status {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.online {
+    color: #00FF00;
+}
+
+.offline {
+    color: #FF0000;
+}
+
+/* Sección de Recompensas */
+.rewards-section {
+    margin-top: 30px;
+    text-align: center;
+}
+
+/* Barra de progreso */
+.progress-container {
+    margin: 20px auto;
+    width: 60%;
+}
+
+.progress {
+    height: 20px;
+    background-color: #555;
+    border-radius: 10px;
+}
+
+.progress-bar {
+    background-color: #8A2BE2;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* Premios */
+.reward {
+    margin-top: 20px;
+}
+
+.reward-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-image: url('img/Premio.jpg'); 
+    background-size: cover;
+    background-position: center;
+    margin: auto;
+}
+
+.reward-description {
+    margin-top: 10px;
+    font-size: 16px;
+    color: #FFFFFF;
+}

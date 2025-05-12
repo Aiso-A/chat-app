@@ -1,0 +1,84 @@
+body {
+    font-family: 'Roboto Mono', monospace;
+    background-color: #121212;
+    color: #FFFFFF;
+    display: flex;
+    height: 100vh;
+    margin: 0;
+}
+
+
+/* Contenido principal */
+.main-content {
+    flex: 1;
+    padding: 20px;
+}
+
+.section-title {
+    font-family: 'Exo 2', sans-serif;
+    font-style: italic;
+    font-weight: 800;
+    color: #00FFFF;
+}
+
+.sub-title {
+    font-family: 'Exo 2', sans-serif;
+    color: #FF007F;
+    margin-top: 20px;
+}
+
+/* Lista de chats */
+.chat-list {
+    margin-top: 10px;
+}
+
+.chat-item {
+    display: flex;
+    align-items: center;
+    background-color: #1E1E1E;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.chat-item:hover {
+    background-color: #8A2BE2;
+}
+
+.avatar {
+    width: 50px;
+    height: 50px;
+    background-color: #00FFFF;
+    border-radius: 50%;
+    margin-right: 15px;
+}
+
+.chat-info h5 {
+    margin: 0;
+    color: #FFFFFF;
+}
+
+.chat-info p {
+    margin: 0;
+    color: #CCCCCC;
+}
+
+/*Modales*/
+.modal-content {
+    background-color: #FFFFFF; 
+    color: #000000; 
+}
+
+.modal-header h4, .modal-body, .modal-footer button {
+    color: #000000; 
+}
+
+.modal-body ul li a {
+    color: #000000; 
+    text-decoration: none;
+}
+
+.modal-body ul li a:hover {
+    text-decoration: underline;
+}

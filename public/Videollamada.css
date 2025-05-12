@@ -1,0 +1,74 @@
+body {
+    background-color: #121212;
+    color: white;
+    font-family: 'Roboto Mono', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+}
+
+
+.video-call-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    width: 90%;
+    max-width: 1200px;
+    margin-bottom: 20px;
+}
+
+
+.video-container {
+    flex: 1;
+    background: black;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+video {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+}
+
+/* Controles */
+.call-controls {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.control-btn {
+    background: #8A2BE2;
+    color: white;
+    border: none;
+    padding: 15px;
+    font-size: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: 0.3s;
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.control-btn:hover {
+    background: #6a1bb2;
+}
+
+/* Botón de colgar */
+.end-call {
+    background: red;
+}
+
+.end-call:hover {
+    background: darkred;
+}
