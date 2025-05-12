@@ -4,6 +4,14 @@ const http = require('http').createServer(app);
 const path = require('path');
 const io = require('socket.io')(http);
 
+const users = [
+  {email:'user@example.com', password:'12345', username:'UzuiPOI' },
+  {email:'filo@gmail.com', password:'7894', username:'FiloLia' },
+  {email:'inui@gmail.com', password:'4561', username:'InuiKo' },
+  {email:'gomez@gmail.com', password:'asdfg', username:'GomezCito' },
+  {email:'ride@gmail.com', password:'zxcvb', username:'TakeRide' }
+];
+
 // Servir archivos estáticos desde el frontend"
 app.use(express.static(path.join(__dirname, 'public')));
 
