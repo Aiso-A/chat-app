@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const http = require('http');
-const io = requiere('socket.io')(http);
+const io = require('socket.io')(http);
 const path = requiere('path')
 
 // Servir archivos estáticos desde el frontend"
