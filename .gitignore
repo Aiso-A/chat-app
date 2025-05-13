@@ -1,0 +1,17 @@
+# Ignorar node_modules (librerías instaladas)
+node_modules/
+
+# Ignorar variables de entorno sensibles
+.env
+
+# Archivos temporales de logs o errores
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos relacionados con Visual Studio Code (si usas)
+.vscode/

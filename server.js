@@ -2,6 +2,9 @@ const express = require('express');
 const path = require('path');
 const http = require('http');
 const socketIO = require('socket.io');
+const mongoose = require('mongoose');
+require('dotenv').config(); // Cargar variables de entorno desde .env
+
 const usuarios = require('./usuarios');
 
 const app = express();
@@ -10,15 +13,23 @@ const io = socketIO(server);
 
 const PORT = process.env.PORT || 3000;
 
-// Archivos estáticos
+// Conexión a MongoDB
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('✅ Conectado a MongoDB'))
+.catch((err) => console.error('❌ Error al conectar a MongoDB:', err));
+
+// Middlewares para archivos estáticos
 app.use(express.static(path.join(__dirname, 'Pantallas')));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(__dirname));
+app.use(express.static(__dirname)); // sirve CSS/JS desde raíz
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Ruta de login
+// Ruta para procesar el login
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
 
@@ -35,18 +46,10 @@ app.post('/login', (req, res) => {
 
 // WebSockets
 io.on('connection', (socket) => {
-  console.log('Un usuario se conectó');
-
-  // Recibir mensaje del cliente
-  socket.on('mensaje', (data) => {
-    console.log('Mensaje recibido:', data);
-
-    // Enviar a todos los clientes conectados
-    io.emit('mensaje', data);
-  });
+  console.log('🟢 Un usuario se conectó');
 
   socket.on('disconnect', () => {
-    console.log('Un usuario se desconectó');
+    console.log('🔴 Un usuario se desconectó');
   });
 });
 
