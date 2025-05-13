@@ -6,7 +6,7 @@ const socketIO = require('socket.io');
 const mongoose = require('mongoose');
 require('dotenv').config(); // Cargar variables de entorno desde .env
 
-const Usuario = require('./models/Usuario'); // Asegúrate de tener el modelo Usuario
+const Usuario = require('./models/Usuarios'); // Asegúrate de tener el modelo Usuario
 
 const app = express();
 const server = http.createServer(app);
