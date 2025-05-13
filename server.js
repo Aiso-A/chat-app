@@ -10,8 +10,11 @@ const io = socketIO(server);
 
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
+// Middlewares para archivos estáticos
+app.use(express.static(path.join(__dirname, 'Pantallas')));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname)); // sirve CSS/JS desde raíz
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -24,9 +27,9 @@ app.post('/login', (req, res) => {
   );
 
   if (usuarioValido) {
-    return res.redirect('/Pantallas/Chats.html');
+    return res.redirect('/Chats.html');
   } else {
-    return res.send(`<script>alert('Credenciales inválidas'); window.location.href='/Pantallas/LogIn.html';</script>`);
+    return res.send(`<script>alert('Credenciales inválidas'); window.location.href='/LogIn.html';</script>`);
   }
 });
 
@@ -38,7 +41,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// Servidor
+// Iniciar servidor
 server.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
 });
