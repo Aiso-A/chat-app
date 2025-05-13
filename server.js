@@ -6,6 +6,8 @@ const socketIO = require('socket.io');
 const mongoose = require('mongoose');
 require('dotenv').config(); // Cargar variables de entorno desde .env
 
+const uri = process.env.MONGO_URI;
+
 const Usuario = require('./models/Usuarios'); // Asegúrate de tener el modelo Usuario
 
 const app = express();
@@ -15,9 +17,9 @@ const io = socketIO(server);
 const PORT = process.env.PORT || 3000;
 
 // Conexión a MongoDB
-mongoose.connect(uri)
-  .then(() => console.log('✅ Conectado a MongoDB'))
-  .catch((err) => console.error('❌ Error al conectar a MongoDB:', err));
+mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Conectado a MongoDB'))
+  .catch((err) => console.error('Error al conectar a MongoDB:', err));
 
 // Middlewares para archivos estáticos
 app.use(express.static(path.join(__dirname, 'Pantallas')));
