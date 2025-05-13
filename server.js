@@ -1,3 +1,4 @@
+
 const express = require('express');
 const path = require('path');
 const http = require('http');
@@ -5,7 +6,7 @@ const socketIO = require('socket.io');
 const mongoose = require('mongoose');
 require('dotenv').config(); // Cargar variables de entorno desde .env
 
-const usuarios = require('./usuarios');
+const Usuario = require('./models/Usuario'); // Asegúrate de tener el modelo Usuario
 
 const app = express();
 const server = http.createServer(app);
@@ -18,13 +19,13 @@ mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('✅ Conectado a MongoDB'))
-.catch((err) => console.error('❌ Error al conectar a MongoDB:', err));
+  .then(() => console.log('✅ Conectado a MongoDB'))
+  .catch((err) => console.error('❌ Error al conectar a MongoDB:', err));
 
 // Middlewares para archivos estáticos
 app.use(express.static(path.join(__dirname, 'Pantallas')));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(__dirname)); // sirve CSS/JS desde raíz
+app.use(express.static(__dirname)); // Sirve CSS/JS desde raíz
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -40,7 +41,7 @@ app.post('/login', (req, res) => {
   if (usuarioValido) {
     return res.redirect('/Pantallas/Chats.html');
   } else {
-    return res.send(`<script>alert('Credenciales inválidas'); window.location.href='/LogIn.html';</script>`);
+    return res.send('<script>alert("Credenciales inválidas"); window.location.href="/LogIn.html";</script>');
   }
 });
 
@@ -51,6 +52,30 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('🔴 Un usuario se desconectó');
   });
+});
+
+// Ruta de registro de nuevo usuario
+app.post('/register', async (req, res) => {
+  const { nombreCompleto, usuario, email, password } = req.body;
+
+  try {
+   
+    const usuarioExistente = await Usuario.findOne({ email });
+
+    if (usuarioExistente) {
+      return res.send('<script>alert("Ya existe un usuario con ese correo"); window.location.href="/Pantallas/LogIn.html";</script>');
+    }
+
+    // Crear y guardar el nuevo usuario
+    const nuevoUsuario = new Usuario({ nombreCompleto, usuario, email, password });
+    await nuevoUsuario.save();
+
+    
+    return res.send('<script>alert("Usuario registrado correctamente"); window.location.href="/Pantallas/LogIn.html";</script>');
+  } catch (err) {
+    console.error('❌ Error al registrar usuario:', err);
+    return res.status(500).send('<script>alert("Hubo un error en el servidor, intenta nuevamente."); window.location.href="/Pantallas/LogIn.html";</script>');
+  }
 });
 
 // Iniciar servidor
