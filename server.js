@@ -10,15 +10,15 @@ const io = socketIO(server);
 
 const PORT = process.env.PORT || 3000;
 
-// Middlewares para archivos estáticos
+// Archivos estáticos
 app.use(express.static(path.join(__dirname, 'Pantallas')));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(__dirname)); // sirve CSS/JS desde raíz
+app.use(express.static(__dirname));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Ruta para procesar el login
+// Ruta de login
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
 
@@ -36,6 +36,15 @@ app.post('/login', (req, res) => {
 // WebSockets
 io.on('connection', (socket) => {
   console.log('Un usuario se conectó');
+
+  // Recibir mensaje del cliente
+  socket.on('mensaje', (data) => {
+    console.log('Mensaje recibido:', data);
+
+    // Enviar a todos los clientes conectados
+    io.emit('mensaje', data);
+  });
+
   socket.on('disconnect', () => {
     console.log('Un usuario se desconectó');
   });

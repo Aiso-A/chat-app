@@ -25,15 +25,17 @@
 
   <!-- Contenido del chat -->
   <div class="main-content" id="chatContainer">
-    <!-- Aquí se renderiza dinámicamente el contenido del chat -->
+    <!-- Se renderiza dinámicamente -->
   </div>
+
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
 
   <script>
     const params = new URLSearchParams(window.location.search);
     const chatId = params.get("id");
     const chatTipo = params.get("tipo");
 
-    // Simulación de chats disponibles
     const chatsDisponibles = [
       { id: "amanda123", tipo: "individual", nombre: "Amanda Flores" },
       { id: "ricardo456", tipo: "individual", nombre: "Ricardo Hernández" },
@@ -50,8 +52,8 @@
       const esGrupal = chat.tipo === "grupal";
 
       container.innerHTML = `
-        <div class="chat-header">
-          <div class="avatar"></div>
+        <div class="chat-header d-flex align-items-center">
+          <div class="avatar me-2"></div>
           <div>
             <h4>${chat.nombre}</h4>
             <p>${esGrupal ? "Chat grupal" : "Chat individual"}</p>
@@ -59,16 +61,9 @@
           ${!esGrupal ? '<button class="btn btn-outline-primary ms-auto" onclick="iniciarVideollamada()">📹</button>' : ""}
         </div>
 
-        <div class="chat-body">
-          <div class="message received">
-            <p>Hola ${chat.nombre.includes(" ") ? chat.nombre.split(" ")[0] : chat.nombre} 👋</p>
-          </div>
-          <div class="message sent">
-            <p>¡Hola! ¿Cómo estás?</p>
-          </div>
-        </div>
+        <div class="chat-body" style="height: 400px; overflow-y: auto; padding: 10px;"></div>
 
-        <div class="chat-footer">
+        <div class="chat-footer d-flex gap-2 mt-2">
           <input type="text" class="form-control" placeholder="Escribe tu mensaje..." />
           <button class="btn btn-secondary">📎</button>
           <button class="btn btn-secondary">🎤</button>
@@ -77,11 +72,48 @@
           <button class="btn btn-secondary">😊</button>
         </div>
       `;
+
+      const socket = io();
+      const input = document.querySelector('.chat-footer input');
+      const chatBody = document.querySelector('.chat-body');
+
+      // Enviar mensaje
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && input.value.trim() !== '') {
+          const mensaje = input.value.trim();
+          socket.emit('mensaje', {
+            contenido: mensaje,
+            emisor: 'Tú',
+            chatId,
+            tipo: chatTipo
+          });
+
+          chatBody.innerHTML += `
+            <div class="message sent">
+              <p>${mensaje}</p>
+            </div>
+          `;
+          input.value = '';
+          chatBody.scrollTop = chatBody.scrollHeight;
+        }
+      });
+
+      // Recibir mensaje
+      socket.on('mensaje', (data) => {
+        if (data.chatId === chatId && data.tipo === chatTipo && data.emisor !== 'Tú') {
+          chatBody.innerHTML += `
+            <div class="message received">
+              <p><strong>${data.emisor}:</strong> ${data.contenido}</p>
+            </div>
+          `;
+          chatBody.scrollTop = chatBody.scrollHeight;
+        }
+      });
     }
 
     function iniciarVideollamada() {
       alert("Iniciando videollamada con " + chatId);
-      // Aquí puedes redirigir a Videollamada.html si lo deseas
+      // Puedes redirigir a otra página o usar WebRTC más adelante
     }
   </script>
 
