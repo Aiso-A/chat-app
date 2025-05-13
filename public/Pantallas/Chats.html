@@ -1,152 +1,111 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ByteTalk - Principal</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Exo+2:wght@800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/Chats.css">
-    <link rel="stylesheet" href="/Sidebar.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ByteTalk - Chat</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Exo+2:wght@800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/Chats.css" />
+  <link rel="stylesheet" href="/Sidebar.css" />
 </head>
 <body>
 
-    <!-- Menú lateral -->
-    <nav class="sidebar">
-        <h2 class="app-title">ByteTalk</h2>
-        <ul>
-            <li><a href="#" data-bs-toggle="modal" data-bs-target="#nuevoChatModal">Nuevo chat</a></li>
-            <li><a href="#" data-bs-toggle="modal" data-bs-target="#nuevoGrupoModal">Nuevo grupo</a></li>
-            <li><a href="/Pantallas/Perfil.html">Perfil</a></li>
-            <li><a href="/Pantallas/Admin.html">Tareas</a></li>
-            <li><a href="/Pantallas/LogIn.html">Cerrar sesión</a></li>
-        </ul>
-    </nav>
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <h2 class="app-title">ByteTalk</h2>
+    <ul>
+      <li><a href="/Pantallas/Chats.html">Volver a chats</a></li>
+      <li><a href="/Pantallas/Perfil.html">Perfil</a></li>
+      <li><a href="/Pantallas/Admin.html">Tareas</a></li>
+      <li><a href="/Pantallas/LogIn.html">Cerrar sesión</a></li>
+    </ul>
+  </nav>
 
-    <!-- Contenido principal -->
-    <div class="main-content">
-        <h3 class="section-title">Lista de Chats</h3>
-
-        <!-- Chats individuales -->
-        <h4 class="sub-title">Chats Individuales</h4>
-        <div class="chat-list">
-            <div class="chat-item" onclick="irAChat('Individual.html')">
-                <div class="avatar"></div>
-                <div class="chat-info">
-                    <h5>Amanda Flores</h5>
-                    <p>Último mensaje recibido...</p>
-                </div>
-            </div>
-            <div class="chat-item" onclick="irAChat('Individual.html')">
-                <div class="avatar"></div>
-                <div class="chat-info">
-                    <h5>Ricardo Hernández</h5>
-                    <p>Último mensaje...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Chats grupales -->
-        <h4 class="sub-title">Chats Grupales</h4>
-        <div class="chat-list">
-            <div class="chat-item" onclick="irAChat('Grupal.html')">
-                <div class="avatar"></div>
-                <div class="chat-info">
-                    <h5>POI Equipo2</h5>
-                    <p>Última conversación del grupo...</p>
-                </div>
-            </div>
-            <div class="chat-item" onclick="irAChat('Grupal.html')">
-                <div class="avatar"></div>
-                <div class="chat-info">
-                    <h5>Club de Progra</h5>
-                    <p>Último mensaje del grupo...</p>
-                </div>
-            </div>
-        </div>
+  <!-- Contenido principal del chat -->
+  <div class="main-content">
+    <div class="chat-header d-flex align-items-center mb-3">
+      <div class="avatar me-2"></div>
+      <h4 id="nombreChat" class="mb-0">Cargando...</h4>
     </div>
 
-    <!-- Modal para Nuevo Chat Individual -->
-    <div class="modal fade" id="nuevoChatModal" tabindex="-1" aria-labelledby="nuevoChatLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title" id="nuevoChatLabel">Selecciona un usuario</h4>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <ul>
-                        <li><a href="#" onclick="crearChat('Maria')">Maria Carrillo</a></li>
-                        <li><a href="#" onclick="crearChat('Kevin')">Kevin Torres</a></li>
-                        <li><a href="#" onclick="crearChat('Manuel')">Manuel Zul</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+    <div id="chatBody" class="chat-body">
+      <!-- Mensajes se cargarán aquí dinámicamente -->
     </div>
 
-    <!-- Modal para Nuevo Chat Grupal -->
-    <div class="modal fade" id="nuevoGrupoModal" tabindex="-1" aria-labelledby="nuevoGrupoLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title" id="nuevoGrupoLabel">Selecciona usuarios para el grupo</h4>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formGrupo">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" name="grupo" value="Jose">
-                            <label class="form-check-label">José Alvaro</label>
-                        </div>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" name="grupo" value="Lily">
-                            <label class="form-check-label">Lily Medina</label>
-                        </div>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" name="grupo" value="Andrea">
-                            <label class="form-check-label">Andrea García</label>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" onclick="crearGrupo()">Crear Grupo</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                </div>
-            </div>
-        </div>
+    <!-- Campo para escribir mensaje -->
+    <div class="chat-input d-flex mt-3">
+      <input type="text" class="form-control me-2" placeholder="Escribe tu mensaje...">
+      <button class="btn btn-primary">Enviar</button>
     </div>
+  </div>
 
-    <script>
-        function irAChat(url) {
-            window.location.href = url;
-        }
+  <script>
+    // Simulación de datos
+    const usuarios = {
+      amanda123: { nombre: "Amanda Flores", mensajes: ["Hola, ¿cómo estás?", "¿Ya viste la tarea?"] },
+      ricardo456: { nombre: "Ricardo Hernández", mensajes: ["¿Todo listo para mañana?"] }
+    };
 
-        function crearChat(nombre) {
-            alert("Chat con " + nombre + " creado.");
-            var modal = bootstrap.Modal.getInstance(document.getElementById('nuevoChatModal'));
-            modal.hide();
-        }
+    const grupos = {
+      equipo2: { nombre: "POI Equipo2", mensajes: ["Hola equipo", "Recuerden enviar el avance."] },
+      clubprogra: { nombre: "Club de Progra", mensajes: ["¿Quién quiere participar en el concurso?"] }
+    };
 
-        function crearGrupo() {
-            let seleccionados = [];
-            document.querySelectorAll('input[name="grupo"]:checked').forEach((checkbox) => {
-                seleccionados.push(checkbox.value);
-            });
+    // Obtener parámetros de URL
+    const params = new URLSearchParams(window.location.search);
+    const tipo = params.get("tipo");
+    const id = params.get("id");
 
-            if (seleccionados.length >= 2) {
-                alert("Grupo creado con: " + seleccionados.join(", "));
-                var modal = bootstrap.Modal.getInstance(document.getElementById('nuevoGrupoModal'));
-                modal.hide();
-            } else {
-                alert("Debes seleccionar al menos 2 miembros para un grupo.");
-            }
-        }
-    </script>
+    const nombreChat = document.getElementById("nombreChat");
+    const chatBody = document.getElementById("chatBody");
 
-   
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    // Mostrar datos según tipo
+    function cargarChat() {
+      if (tipo === "individual" && usuarios[id]) {
+        nombreChat.textContent = usuarios[id].nombre;
+        usuarios[id].mensajes.forEach(msg => {
+          chatBody.innerHTML += `<div class="message received">${msg}</div>`;
+        });
+      } else if (tipo === "grupal" && grupos[id]) {
+        nombreChat.textContent = grupos[id].nombre;
+        grupos[id].mensajes.forEach(msg => {
+          chatBody.innerHTML += `<div class="message group"><strong>Miembro:</strong> ${msg}</div>`;
+        });
+      } else {
+        nombreChat.textContent = "Chat no encontrado";
+        chatBody.innerHTML = `<div class="alert alert-danger">El chat no existe o los parámetros están mal.</div>`;
+      }
+    }
+
+    cargarChat();
+  </script>
+
+  <style>
+    /* Estilo de ejemplo para mensajes */
+    .chat-body {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 10px;
+      height: 300px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+    }
+    .message {
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 10px;
+      max-width: 70%;
+    }
+    .message.received {
+      background-color: #e0e0e0;
+      align-self: flex-start;
+    }
+    .message.group {
+      background-color: #d0f0ff;
+    }
+  </style>
 
 </body>
 </html>
