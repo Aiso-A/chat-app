@@ -1,40 +1,44 @@
 const express = require('express');
-const app = express();
-const http = require('http').createServer(app);
 const path = require('path');
-const io = require('socket.io')(http);
+const http = require('http');
+const socketIO = require('socket.io');
+const usuarios = require('./usuarios');
 
-const users = [
-  {email:'user@example.com', password:'12345', username:'UzuiPOI' },
-  {email:'filo@gmail.com', password:'7894', username:'FiloLia' },
-  {email:'inui@gmail.com', password:'4561', username:'InuiKo' },
-  {email:'gomez@gmail.com', password:'asdfg', username:'GomezCito' },
-  {email:'ride@gmail.com', password:'zxcvb', username:'TakeRide' }
-];
+const app = express();
+const server = http.createServer(app);
+const io = socketIO(server);
 
-// Servir archivos estáticos desde el frontend"
+const PORT = process.env.PORT || 3000;
+
+// Middlewares
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-//Esto es la ruta principal, redirige al login si es que es necesario
-app.get('/', (req, res) =>{
-  res.sendFile(path.join(__dirname, 'public', 'LogIn.html'))
-})
+// Ruta para procesar el login
+app.post('/login', (req, res) => {
+  const { email, password } = req.body;
 
-// Lógica del chat usando Socket.io
+  const usuarioValido = usuarios.find(
+    (u) => u.email === email && u.password === password
+  );
+
+  if (usuarioValido) {
+    return res.redirect('/Pantallas/Chats.html');
+  } else {
+    return res.send(`<script>alert('Credenciales inválidas'); window.location.href='/Pantallas/Login.html';</script>`);
+  }
+});
+
+// WebSockets
 io.on('connection', (socket) => {
-  console.log('Un usuario se ha conectado');
-
-  socket.on('chat message', (msg) => {
-    io.emit('chat message', msg); //Reenvía a todos el mensaje
-  });
-
+  console.log('Un usuario se conectó');
   socket.on('disconnect', () => {
-    console.log('Usuario desconectado');
+    console.log('Un usuario se desconectó');
   });
 });
 
-//  Para la escucha en el puerto asignado por Render o por defecto en local
-const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => {
-  console.log(`Servidor escuchando en el puerto ${PORT}`);
+// Servidor
+server.listen(PORT, () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
 });
