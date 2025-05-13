@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Chats | ByteTalk</title>
-  <link rel="stylesheet" href="../Chats.css">
-  <link rel="stylesheet" href="../Sidebar.css">
+  <link rel="stylesheet" href="Sidebar.css" />
+  <link rel="stylesheet" href="/Chats.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@1,800&family=Roboto+Mono&family=Saira+Stencil+One&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <!-- Sidebar con tu estilo personalizado -->
-    <aside class="sidebar">
+  <div class="contenedor">
+    <!-- Sidebar -->
+    <div class="sidebar">
       <h2 class="logo">ByteTalk</h2>
-      <ul>
+      <ul class="menu">
         <li><a href="#" id="nuevoChatBtn">Nuevo chat</a></li>
         <li><a href="#" id="nuevoGrupoBtn">Nuevo grupo</a></li>
         <li class="nav-item"><a href="/Pantallas/Perfil.html" class="nav-link">Perfil</a></li>
         <li class="nav-item"><a href="/Pantallas/Admin.html" class="nav-link">Tareas</a></li>
         <li class="nav-item"><a href="/Pantallas/LogIn.html" class="nav-link">Cerrar sesión</a></li>
       </ul>
-    </aside>
+    </div>
 
-    <main class="main-content">
-      <h1>Mis chats</h1>
+    <!-- Contenido principal -->
+    <div class="contenido">
+      <h1 class="titulo">Mis Chats</h1>
 
-      <!-- 🔹 Formulario para nuevo chat individual -->
+      <!-- 🔹 Sección para nuevo chat -->
       <section id="nuevoChatSection" style="display: none;">
         <h2>Crear chat individual</h2>
         <form id="formNuevoChat">
@@ -34,11 +36,24 @@
         </form>
       </section>
 
-      <!-- 🔹 Aquí irá la lista de chats del usuario (próximamente con base de datos) -->
+      <!-- 🔹 Sección para nuevo grupo -->
+      <section id="nuevoGrupoSection" style="display: none;">
+        <h2>Crear grupo</h2>
+        <form id="formNuevoGrupo">
+          <input type="hidden" name="usuario1" id="miCorreoGrupo">
+          <label for="usuariosGrupo">Selecciona integrantes:</label>
+          <select name="usuariosGrupo" id="listaUsuariosGrupo" multiple required></select>
+          <label for="nombreGrupo">Nombre del grupo:</label>
+          <input type="text" name="nombreGrupo" id="nombreGrupo" required />
+          <button type="submit">Crear Grupo</button>
+        </form>
+      </section>
+
+      <!-- 🔹 Lista de chats (a futuro) -->
       <div id="listaChats">
         <p>Pronto aparecerán tus chats aquí...</p>
       </div>
-    </main>
+    </div>
   </div>
 
   <script src="../JS/Chats.js"></script>
