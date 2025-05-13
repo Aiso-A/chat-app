@@ -38,23 +38,23 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form id="registerForm" action="/registro" method="POST">
-                        <div class="mb-3">
-                            <label for="fullName" class="form-label">Nombre Completo</label>
-                            <input type="text" class="form-control" id="nombreCompleto" name="nombreCompleto" placeholder="Ingresa tu nombre completo" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Nombre de Usuario</label>
-                            <input type="text" class="form-control" id="nombreUsuario" name="nombreUsuario" placeholder="Elige un nombre de usuario" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="registerEmail" class="form-label">Correo Electrónico</label>
-                            <input type="email" class="form-control" id="email" name="email" placeholder="Ingresa tu correo" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="registerPassword" class="form-label">Contraseña</label>
-                            <input type="password" class="form-control" id="password" name="password" placeholder="Crea una contraseña" required>
-                        </div>
+                   <form id="registerForm" action="/registro" method="POST">
+                      <div class="mb-3">
+                         <label for="nombreCompleto" class="form-label">Nombre Completo</label>
+                         <input type="text" class="form-control" id="nombreCompleto" name="nombreCompleto" required>
+                      </div>
+                      <div class="mb-3">
+                            <label for="nombreUsuario" class="form-label">Nombre de Usuario</label>
+                            <input type="text" class="form-control" id="nombreUsuario" name="nombreUsuario" required>
+                      </div>
+                      <div class="mb-3">
+                            <label for="email" class="form-label">Correo Electrónico</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                      </div>
+                      <div class="mb-3">
+                            <label for="password" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                      </div>
                         <button type="submit" class="btn btn-success w-100">Registrarse</button>
                     </form>
                 </div>
