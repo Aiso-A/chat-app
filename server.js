@@ -27,9 +27,9 @@ app.post('/login', (req, res) => {
   );
 
   if (usuarioValido) {
-    return res.redirect('/Chats.html');
+    return res.redirect('/Pantallas/Chats.html');
   } else {
-    return res.send(`<script>alert('Credenciales inválidas'); window.location.href='/LogIn.html';</script>`);
+    return res.send(`<script>alert('Credenciales inválidas'); window.location.href='/Pantallas/LogIn.html';</script>`);
   }
 });
 
