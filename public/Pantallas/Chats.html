@@ -1,90 +1,46 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ByteTalk - Chat</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Exo+2:wght@800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/Chats.css" />
-  <link rel="stylesheet" href="/Sidebar.css" />
+  <meta charset="UTF-8">
+  <title>Chats | ByteTalk</title>
+  <link rel="stylesheet" href="../Chats.css">
+  <link rel="stylesheet" href="../Sidebar.css">
 </head>
 <body>
+  <div class="container">
+    <!-- Sidebar con tu estilo personalizado -->
+    <aside class="sidebar">
+      <h2 class="logo">ByteTalk</h2>
+      <ul>
+        <li><a href="#" id="nuevoChatBtn">Nuevo chat</a></li>
+        <li><a href="#" id="nuevoGrupoBtn">Nuevo grupo</a></li>
+        <li class="nav-item"><a href="/Pantallas/Perfil.html" class="nav-link">Perfil</a></li>
+        <li class="nav-item"><a href="/Pantallas/Admin.html" class="nav-link">Tareas</a></li>
+        <li class="nav-item"><a href="/Pantallas/LogIn.html" class="nav-link">Cerrar sesión</a></li>
+      </ul>
+    </aside>
 
-  <!-- Menú lateral -->
-  <nav class="sidebar">
-    <h2 class="app-title">ByteTalk</h2>
-    <ul>
-      <li><a href="/Pantallas/Chats.html">Volver a chats</a></li>
-      <li><a href="/Pantallas/Perfil.html">Perfil</a></li>
-      <li><a href="/Pantallas/Admin.html">Tareas</a></li>
-      <li><a href="/Pantallas/LogIn.html">Cerrar sesión</a></li>
-    </ul>
-  </nav>
+    <main class="main-content">
+      <h1>Mis chats</h1>
 
-  <!-- Contenido del chat -->
-  <div class="main-content" id="chatContainer">
-    <!-- Aquí se renderiza dinámicamente el contenido del chat -->
+      <!-- 🔹 Formulario para nuevo chat individual -->
+      <section id="nuevoChatSection" style="display: none;">
+        <h2>Crear chat individual</h2>
+        <form id="formNuevoChat">
+          <input type="hidden" name="usuario1" id="miCorreo">
+          <label for="usuario2">Selecciona un usuario:</label>
+          <select name="usuario2" id="listaUsuarios" required></select>
+          <button type="submit">Crear Chat</button>
+        </form>
+      </section>
+
+      <!-- 🔹 Aquí irá la lista de chats del usuario (próximamente con base de datos) -->
+      <div id="listaChats">
+        <p>Pronto aparecerán tus chats aquí...</p>
+      </div>
+    </main>
   </div>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const chatId = params.get("id");
-    const chatTipo = params.get("tipo");
-
-    // Simulación de chats disponibles
-    const chatsDisponibles = [
-      { id: "amanda123", tipo: "individual", nombre: "Amanda Flores" },
-      { id: "ricardo456", tipo: "individual", nombre: "Ricardo Hernández" },
-      { id: "equipo2", tipo: "grupal", nombre: "POI Equipo2" },
-      { id: "clubprogra", tipo: "grupal", nombre: "Club de Progra" }
-    ];
-
-    const chat = chatsDisponibles.find(c => c.id === chatId && c.tipo === chatTipo);
-    const container = document.getElementById("chatContainer");
-
-    if (!chat) {
-      container.innerHTML = `<h2 class="text-danger">❌ El chat no existe o los parámetros están mal.</h2>`;
-    } else {
-      const esGrupal = chat.tipo === "grupal";
-
-      container.innerHTML = `
-        <div class="chat-header">
-          <div class="avatar"></div>
-          <div>
-            <h4>${chat.nombre}</h4>
-            <p>${esGrupal ? "Chat grupal" : "Chat individual"}</p>
-          </div>
-          ${!esGrupal ? '<button class="btn btn-outline-primary ms-auto" onclick="iniciarVideollamada()">📹</button>' : ""}
-        </div>
-
-        <div class="chat-body">
-          <div class="message received">
-            <p>Hola ${chat.nombre.includes(" ") ? chat.nombre.split(" ")[0] : chat.nombre} 👋</p>
-          </div>
-          <div class="message sent">
-            <p>¡Hola! ¿Cómo estás?</p>
-          </div>
-        </div>
-
-        <div class="chat-footer">
-          <input type="text" class="form-control" placeholder="Escribe tu mensaje..." />
-          <button class="btn btn-secondary">📎</button>
-          <button class="btn btn-secondary">🎤</button>
-          <button class="btn btn-secondary">📷</button>
-          <button class="btn btn-secondary">🗺️</button>
-          <button class="btn btn-secondary">😊</button>
-        </div>
-      `;
-    }
-
-    function iniciarVideollamada() {
-      alert("Iniciando videollamada con " + chatId);
-      // Aquí puedes redirigir a Videollamada.html si lo deseas
-    }
-  </script>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../JS/Chats.js"></script>
 </body>
 </html>

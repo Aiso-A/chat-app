@@ -7,33 +7,36 @@ const usuarios = require('./usuarios');
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
-
 const PORT = process.env.PORT || 3000;
 
-// Middlewares para archivos estáticos
-app.use(express.static(path.join(__dirname, 'Pantallas')));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(__dirname)); // sirve CSS/JS desde raíz
-
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Ruta para procesar el login
+// Login
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
-
-  const usuarioValido = usuarios.find(
-    (u) => u.email === email && u.password === password
-  );
+  const usuarioValido = usuarios.find(u => u.email === email && u.password === password);
 
   if (usuarioValido) {
-    return res.redirect('/Pantallas/Chats.html');
+    return res.send(`
+      <script>
+        sessionStorage.setItem('correo', '${usuarioValido.email}');
+        window.location.href = '/Pantallas/Chats.html';
+      </script>
+    `);
   } else {
     return res.send(`<script>alert('Credenciales inválidas'); window.location.href='/Pantallas/LogIn.html';</script>`);
   }
 });
 
-// WebSockets
+// API para obtener usuarios (solo email y username)
+app.get('/api/usuarios', (req, res) => {
+  const lista = usuarios.map(u => ({ email: u.email, username: u.username }));
+  res.json(lista);
+});
+
+// WebSocket
 io.on('connection', (socket) => {
   console.log('Un usuario se conectó');
   socket.on('disconnect', () => {
