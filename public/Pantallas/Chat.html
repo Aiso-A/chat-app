@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Exo+2:wght@800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/Chats.css" />
+  <link rel="stylesheet" href="/Chat.css" />
   <link rel="stylesheet" href="/Sidebar.css" />
 </head>
 <body>
@@ -15,7 +15,7 @@
   <!-- Sidebar -->
   <nav class="sidebar">
     <h2 class="app-title">ByteTalk</h2>
-    <p class="sidebar-user">Bienvenido, <span id="username">{{usuario}}</span></p>
+    <p class="sidebar-user">Bienvenido, <span id="username">...</span></p>
     <ul>
       <li><a href="/Pantallas/Chats.html">Volver a chats</a></li>
       <li><a href="/Pantallas/Perfil.html">Perfil</a></li>
@@ -49,29 +49,50 @@
   <script>
     const socket = io();
 
+    // Parámetros de la URL
     const urlParams = new URLSearchParams(window.location.search);
     const chatId = urlParams.get('id');
-    const tipo = urlParams.get('tipo'); // 'individual' o 'grupo'
+    const tipo = urlParams.get('tipo');
+
+    // Validar parámetros
+    if (!chatId || !tipo) {
+      alert("Faltan datos del chat. Serás redirigido.");
+      window.location.href = "/Pantallas/Chats.html";
+    }
+
+    // Mostrar nombre de usuario (desde localStorage)
+    const username = localStorage.getItem("usuario");
+    if (username) {
+      document.getElementById("username").textContent = username;
+    }
 
     const mensajesDiv = document.getElementById('mensajes');
     const formulario = document.getElementById('formularioMensaje');
     const inputMensaje = document.getElementById('mensaje');
     const chatTitle = document.getElementById('chat-title');
 
-    // Cargar nombre del chat
+    // Obtener nombre del chat
     fetch(`/api/chat-info?id=${chatId}&tipo=${tipo}`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("No se pudo obtener la información del chat");
+        return res.json();
+      })
       .then(data => {
         chatTitle.textContent = data.nombre;
+      })
+      .catch(err => {
+        console.error(err);
+        chatTitle.textContent = "Chat no encontrado";
       });
 
-    // Cargar mensajes
+    // Obtener mensajes anteriores
     fetch(`/api/mensajes?chatId=${chatId}`)
       .then(res => res.json())
       .then(mensajes => {
         mensajes.forEach(m => {
           const div = document.createElement('div');
-          div.className = 'mb-2';
+          const esPropio = m.sender.nombreUsuario === username;
+          div.className = `mb-2 ${esPropio ? 'mensaje-propio' : 'mensaje-ajeno'}`;
           div.innerHTML = `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto}`;
           mensajesDiv.appendChild(div);
         });
@@ -90,10 +111,15 @@
         body: JSON.stringify({ chatId, texto })
       });
 
-      const nuevoMensaje = await res.json();
+      if (!res.ok) {
+        alert("Error al enviar el mensaje");
+        return;
+      }
 
+      const nuevoMensaje = await res.json();
       const div = document.createElement('div');
-      div.className = 'mb-2';
+      const esPropio = nuevoMensaje.sender.nombreUsuario === username;
+      div.className = `mb-2 ${esPropio ? 'mensaje-propio' : 'mensaje-ajeno'}`;
       div.innerHTML = `<strong>${nuevoMensaje.sender.nombreUsuario}:</strong> ${nuevoMensaje.texto}`;
       mensajesDiv.appendChild(div);
 
@@ -101,9 +127,11 @@
       mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
     });
 
+    // Botón volver
     document.getElementById('back-btn').addEventListener('click', () => {
       window.location.href = "/Pantallas/Chats.html";
     });
   </script>
 </body>
 </html>
+

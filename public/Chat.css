@@ -1,0 +1,104 @@
+/* Tipografía y fondo general */
+body {
+  font-family: 'Roboto Mono', monospace;
+  background-color: #121212;
+  color: #FFFFFF;
+  margin: 0;
+  display: flex;
+}
+
+/* Contenedor del contenido principal (lado derecho del sidebar) */
+.container {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+/* Card del chat */
+.card {
+  background-color: #1E1E1E;
+  border: none;
+  color: #FFFFFF;
+}
+
+.card-header {
+  background-color: #1E1E1E;
+  border-bottom: 1px solid #333;
+  color: #00FFFF;
+  font-family: 'Exo 2', sans-serif;
+  font-style: italic;
+  font-weight: 800;
+}
+
+.card-footer {
+  background-color: #1E1E1E;
+  border-top: 1px solid #333;
+}
+
+/* Input de mensaje */
+#mensaje {
+  background-color: #2A2A2A;
+  color: #FFFFFF;
+  border: 1px solid #444;
+}
+
+#mensaje::placeholder {
+  color: #AAAAAA;
+}
+
+/* Botón enviar */
+.btn-primary {
+  background-color: #FF007F;
+  border: none;
+}
+
+.btn-primary:hover {
+  background-color: #8A2BE2;
+}
+
+/* Botón volver */
+.btn-outline-primary {
+  color: #00FFFF;
+  border-color: #00FFFF;
+}
+
+.btn-outline-primary:hover {
+  background-color: #00FFFF;
+  color: #121212;
+}
+
+/* Área de mensajes */
+#mensajes {
+  padding: 10px;
+  background-color: #1E1E1E;
+  overflow-y: auto;
+  height: 400px;
+}
+
+/* Estilos para los mensajes */
+.mensaje-propio {
+  background-color: #00FFFF22;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-left: auto;
+  max-width: 75%;
+  text-align: right;
+  margin-bottom: 10px;
+}
+
+.mensaje-ajeno {
+  background-color: #FFFFFF11;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-right: auto;
+  max-width: 75%;
+  text-align: left;
+  margin-bottom: 10px;
+}
+
+/* Nombre del emisor */
+.mensaje-propio strong,
+.mensaje-ajeno strong {
+  color: #00FFFF;
+  font-weight: bold;
+  display: block;
+}

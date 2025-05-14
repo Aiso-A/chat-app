@@ -1,12 +1,13 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
+const fs = require('fs');
 const socketIO = require('socket.io');
 const mongoose = require('mongoose');
 const session = require('express-session');
 require('dotenv').config();
 
-//Models
+// Models
 const Usuario = require('./models/Usuarios');
 const Chat = require('./models/Chat');
 const Mensaje = require('./models/Mensaje');
@@ -40,9 +41,13 @@ app.post('/login', async (req, res) => {
   try {
     const usuario = await Usuario.findOne({ email });
     if (usuario && await usuario.comparePassword(password)) {
-      req.session.usuarioId = usuario._id;
-      req.session.nombreUsuario = usuario.nombreUsuario;
-      return res.redirect('/Pantallas/Chats.html');
+      req.session.usuario = {
+        id: usuario._id,
+        nombreUsuario: usuario.nombreUsuario,
+        nombreCompleto: usuario.nombreCompleto,
+        email: usuario.email
+      };
+      return res.redirect('/chats');
     } else {
       return res.send('<script>alert("Credenciales inválidas"); window.location.href="/Pantallas/LogIn.html";</script>');
     }
@@ -71,29 +76,38 @@ app.post('/registro', async (req, res) => {
   }
 });
 
-// API para obtener chats del usuario
-app.get('/api/chats', async (req, res) => {
+// RUTA /chats (Renderiza el HTML con el nombre del usuario en el sidebar)
+app.get('/chats', async (req, res) => {
+  if (!req.session.usuario) {
+    return res.redirect('/Pantallas/LogIn.html');
+  }
+
   try {
-    const userId = req.session.userId;
-    if (!userId) return res.status(401).json({ error: 'No autenticado' });
-
-    const chats = await Chat.find({ participantes: userId })
-      .populate('participantes', 'nombreUsuario')
-      .populate({ path: 'mensajes', populate: { path: 'sender', select: 'nombreUsuario' } });
-
-    const individuales = chats.filter(chat => chat.tipo === 'individual');
-    const grupales = chats.filter(chat => chat.tipo === 'grupo');
-
-    res.json({ individuales, grupales });
+    const html = fs.readFileSync(path.join(__dirname, 'Pantallas', 'Chats.html'), 'utf8');
+    const htmlConUsuario = html.replace('{{usuario}}', req.session.usuario.nombreUsuario);
+    res.send(htmlConUsuario);
   } catch (err) {
-    console.error('Error al obtener chats:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('❌ Error al cargar Chats.html:', err);
+    res.status(500).send('Error interno');
   }
 });
 
-// API para crear chat individual
+//API para obtener usuarios disponibles (para crear chats)
+app.get('/api/usuarios', async (req, res) => {
+  if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
+
+  try {
+    const usuarios = await Usuario.find({ _id: { $ne: req.session.usuario.id } }, 'nombreUsuario nombreCompleto');
+    res.json(usuarios);
+  } catch (err) {
+    console.error('Error obteniendo usuarios:', err);
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+//Crear chat individual
 app.post('/api/chats/individual', async (req, res) => {
-  const userId = req.session.userId;
+  const userId = req.session.usuario?.id;
   const { receptorId } = req.body;
 
   try {
@@ -113,9 +127,9 @@ app.post('/api/chats/individual', async (req, res) => {
   }
 });
 
-// API para crear chat grupal
+//Crear chat grupal
 app.post('/api/chats/grupo', async (req, res) => {
-  const userId = req.session.userId;
+  const userId = req.session.usuario?.id;
   const { nombre, usuarios } = req.body;
 
   try {
@@ -137,9 +151,9 @@ app.post('/api/chats/grupo', async (req, res) => {
   }
 });
 
-// API para enviar mensaje
+//Enviar mensaje
 app.post('/api/mensajes', async (req, res) => {
-  const userId = req.session.userId;
+  const userId = req.session.usuario?.id;
   const { chatId, texto } = req.body;
 
   try {
@@ -163,6 +177,7 @@ io.on('connection', (socket) => {
   });
 });
 
+// Iniciar servidor
 server.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+  console.log(` Servidor corriendo en puerto ${PORT}`);
 });
