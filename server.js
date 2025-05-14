@@ -46,6 +46,32 @@ function requireLogin(req, res, next) {
   next();
 }
 
+const mongoose = require('mongoose');
+const Usuario = require('./models/Usuario'); // Asegúrate de que este archivo existe
+
+app.get('/verificar-bd', async (req, res) => {
+  try {
+    const usuarios = await Usuario.find({});
+    res.json({
+      exito: true,
+      cantidad: usuarios.length,
+      usuarios: usuarios.map(u => ({
+        nombre: u.nombre,
+        usuario: u.usuario,
+        correo: u.correo // 👈 Aquí añadimos el correo
+      }))
+    });
+  } catch (error) {
+    console.error('Error al acceder a la base de datos:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al acceder a la base de datos',
+      error: error.message
+    });
+  }
+});
+
+
 // LOGIN
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
