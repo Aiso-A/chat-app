@@ -78,17 +78,28 @@ app.post('/registro', async (req, res) => {
 
 // RUTA /chats (Renderiza el HTML con el nombre del usuario en el sidebar)
 app.get('/chats', async (req, res) => {
+  // Verificar si la sesión del usuario está activa
   if (!req.session.usuario) {
-    return res.redirect('/Pantallas/LogIn.html');
+    console.log('Usuario no autenticado');
+    return res.redirect('/Pantallas/LogIn.html'); // Redirige a la pantalla de login si no hay sesión
   }
 
   try {
+    // Log para verificar que la sesión está funcionando correctamente
+    console.log('Usuario autenticado:', req.session.usuario); 
+
+    // Intentar leer el archivo 'Chats.html'
     const html = fs.readFileSync(path.join(__dirname, 'Pantallas', 'Chats.html'), 'utf8');
+    
+    // Reemplazar el marcador de posición '{{usuario}}' con el nombre de usuario
     const htmlConUsuario = html.replace('{{usuario}}', req.session.usuario.nombreUsuario);
+    
+    // Enviar el contenido del archivo HTML modificado al navegador
     res.send(htmlConUsuario);
   } catch (err) {
+    // Si hay un error al leer el archivo o procesarlo
     console.error('❌ Error al cargar Chats.html:', err);
-    res.status(500).send('Error interno');
+    res.status(500).send('Error interno'); // Enviar un error 500 al cliente
   }
 });
 
