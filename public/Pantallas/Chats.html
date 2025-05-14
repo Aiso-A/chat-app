@@ -15,6 +15,7 @@
   <!-- Menú lateral -->
   <nav class="sidebar">
     <h2 class="app-title">ByteTalk</h2>
+    <p class="sidebar-user">Bienvenido, <span id="username">{{usuario}}</span></p>
     <ul>
       <li><a href="/Pantallas/Chats.html">Volver a chats</a></li>
       <li><a href="/Pantallas/Perfil.html">Perfil</a></li>
@@ -23,100 +24,162 @@
     </ul>
   </nav>
 
-  <!-- Contenido del chat -->
-  <div class="main-content" id="chatContainer">
-    <!-- Se renderiza dinámicamente -->
+  <!-- Contenido de chats -->
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3>Chats Individuales</h3>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevoChatModal">+ Nuevo chat</button>
+    </div>
+    <div id="chats-individuales" class="mb-4"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3>Chats Grupales</h3>
+      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#nuevoGrupoModal">+ Nuevo grupo</button>
+    </div>
+    <div id="chats-grupales"></div>
   </div>
 
-  <!-- Socket.io -->
-  <script src="/socket.io/socket.io.js"></script>
+  <!-- Modal Chat Individual -->
+  <div class="modal fade" id="nuevoChatModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content" style="background-color: #121212; color: white;">
+        <div class="modal-header">
+          <h5 class="modal-title">Crear nuevo chat individual</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label for="usuariosSelect">Selecciona un usuario:</label>
+          <select id="usuariosSelect" class="form-select mt-2" style="background-color: #222; color: white;"></select>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-success" onclick="crearChatIndividual()">Crear chat</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <!-- Modal Chat Grupal -->
+  <div class="modal fade" id="nuevoGrupoModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content" style="background-color: #121212; color: white;">
+        <div class="modal-header">
+          <h5 class="modal-title">Crear nuevo grupo</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label for="nombreGrupo">Nombre del grupo:</label>
+          <input id="nombreGrupo" type="text" class="form-control mb-3" placeholder="Ej. Proyecto Final" style="background-color: #222; color: white;">
+
+          <label for="usuariosGrupo">Selecciona al menos 2 usuarios:</label>
+          <select id="usuariosGrupo" class="form-select mt-2" multiple style="background-color: #222; color: white; height: 200px;"></select>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-success" onclick="crearGrupo()">Crear grupo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Script de lógica -->
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const chatId = params.get("id");
-    const chatTipo = params.get("tipo");
+    let usuarioActual = null;
 
-    const chatsDisponibles = [
-      { id: "amanda123", tipo: "individual", nombre: "Amanda Flores" },
-      { id: "ricardo456", tipo: "individual", nombre: "Ricardo Hernández" },
-      { id: "equipo2", tipo: "grupal", nombre: "POI Equipo2" },
-      { id: "clubprogra", tipo: "grupal", nombre: "Club de Progra" }
-    ];
+    fetch('/api/usuario-actual')
+      .then(res => res.json())
+      .then(data => {
+        usuarioActual = data;
+        document.getElementById('username').textContent = data.nombreUsuario;
+        cargarUsuarios();
+        cargarChats();
+      });
 
-    const chat = chatsDisponibles.find(c => c.id === chatId && c.tipo === chatTipo);
-    const container = document.getElementById("chatContainer");
+    // Cargar usuarios para ambos modales
+    function cargarUsuarios() {
+      fetch('/api/usuarios')
+        .then(res => res.json())
+        .then(usuarios => {
+          const selectInd = document.getElementById('usuariosSelect');
+          const selectGrupo = document.getElementById('usuariosGrupo');
+          selectInd.innerHTML = '';
+          selectGrupo.innerHTML = '';
 
-    if (!chat) {
-      container.innerHTML = `<h2 class="text-danger">❌ El chat no existe o los parámetros están mal.</h2>`;
-    } else {
-      const esGrupal = chat.tipo === "grupal";
+          usuarios.forEach(u => {
+            if (u._id !== usuarioActual._id) {
+              let opt1 = document.createElement('option');
+              opt1.value = u._id;
+              opt1.textContent = u.nombreUsuario;
+              selectInd.appendChild(opt1);
 
-      container.innerHTML = `
-        <div class="chat-header d-flex align-items-center">
-          <div class="avatar me-2"></div>
-          <div>
-            <h4>${chat.nombre}</h4>
-            <p>${esGrupal ? "Chat grupal" : "Chat individual"}</p>
-          </div>
-          ${!esGrupal ? '<button class="btn btn-outline-primary ms-auto" onclick="iniciarVideollamada()">📹</button>' : ""}
-        </div>
+              let opt2 = document.createElement('option');
+              opt2.value = u._id;
+              opt2.textContent = u.nombreUsuario;
+              selectGrupo.appendChild(opt2);
+            }
+          });
+        });
+    }
 
-        <div class="chat-body" style="height: 400px; overflow-y: auto; padding: 10px;"></div>
+    // Crear chat individual
+    function crearChatIndividual() {
+      const userId = document.getElementById('usuariosSelect').value;
+      fetch('/api/chats/individual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receptorId: userId })
+      })
+        .then(res => res.json())
+        .then(data => {
+          window.location.href = `/Pantallas/Chat.html?id=${data.chatId}&tipo=individual`;
+        });
+    }
 
-        <div class="chat-footer d-flex gap-2 mt-2">
-          <input type="text" class="form-control" placeholder="Escribe tu mensaje..." />
-          <button class="btn btn-secondary">📎</button>
-          <button class="btn btn-secondary">🎤</button>
-          <button class="btn btn-secondary">📷</button>
-          <button class="btn btn-secondary">🗺️</button>
-          <button class="btn btn-secondary">😊</button>
-        </div>
-      `;
+    // Crear grupo
+    function crearGrupo() {
+      const nombre = document.getElementById('nombreGrupo').value.trim();
+      const usuariosSelect = document.getElementById('usuariosGrupo');
+      const seleccionados = Array.from(usuariosSelect.selectedOptions).map(opt => opt.value);
 
-      const socket = io();
-      const input = document.querySelector('.chat-footer input');
-      const chatBody = document.querySelector('.chat-body');
+      if (nombre === '' || seleccionados.length < 2) {
+        alert("Debes escribir un nombre y seleccionar al menos 2 usuarios.");
+        return;
+      }
 
-      // Enviar mensaje
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && input.value.trim() !== '') {
-          const mensaje = input.value.trim();
-          socket.emit('mensaje', {
-            contenido: mensaje,
-            emisor: 'Tú',
-            chatId,
-            tipo: chatTipo
+      fetch('/api/chats/grupo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, usuarios: seleccionados })
+      })
+        .then(res => res.json())
+        .then(data => {
+          window.location.href = `/Pantallas/Chat.html?id=${data.chatId}&tipo=grupo`;
+        });
+    }
+
+    // Cargar chats
+    function cargarChats() {
+      fetch('/api/chats')
+        .then(res => res.json())
+        .then(data => {
+          const indiv = document.getElementById('chats-individuales');
+          const grup = document.getElementById('chats-grupales');
+          indiv.innerHTML = '';
+          grup.innerHTML = '';
+
+          data.individuales.forEach(chat => {
+            const otro = chat.participantes.find(p => p._id !== usuarioActual._id);
+            indiv.innerHTML += `<div class="chat-card" onclick="window.location.href='/Pantallas/Chat.html?id=${chat._id}&tipo=individual'">${otro.nombreUsuario}</div>`;
           });
 
-          chatBody.innerHTML += `
-            <div class="message sent">
-              <p>${mensaje}</p>
-            </div>
-          `;
-          input.value = '';
-          chatBody.scrollTop = chatBody.scrollHeight;
-        }
-      });
-
-      // Recibir mensaje
-      socket.on('mensaje', (data) => {
-        if (data.chatId === chatId && data.tipo === chatTipo && data.emisor !== 'Tú') {
-          chatBody.innerHTML += `
-            <div class="message received">
-              <p><strong>${data.emisor}:</strong> ${data.contenido}</p>
-            </div>
-          `;
-          chatBody.scrollTop = chatBody.scrollHeight;
-        }
-      });
-    }
-
-    function iniciarVideollamada() {
-      alert("Iniciando videollamada con " + chatId);
-      // Puedes redirigir a otra página o usar WebRTC más adelante
+          data.grupales.forEach(chat => {
+            grup.innerHTML += `<div class="chat-card" onclick="window.location.href='/Pantallas/Chat.html?id=${chat._id}&tipo=grupo'">${chat.nombre}</div>`;
+          });
+        });
     }
   </script>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
