@@ -5,9 +5,10 @@ const fs = require('fs');
 const socketIO = require('socket.io');
 const mongoose = require('mongoose');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 require('dotenv').config();
 
-// Models
+// Modelos
 const Usuario = require('./models/Usuarios');
 const Chat = require('./models/Chat');
 const Mensaje = require('./models/Mensaje');
@@ -15,10 +16,11 @@ const Mensaje = require('./models/Mensaje');
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
+
 const PORT = process.env.PORT || 3000;
 const uri = process.env.MONGO_URI;
 
-// Conectar a MongoDB
+// Conexión a MongoDB
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('✅ Conectado a MongoDB'))
   .catch((err) => console.error('❌ Error al conectar a MongoDB:', err));
@@ -32,8 +34,17 @@ app.use(express.json());
 app.use(session({
   secret: 'secretoByteTalk',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: uri })
 }));
+
+// Middleware para proteger rutas
+function requireLogin(req, res, next) {
+  if (!req.session.usuario) {
+    return res.redirect('/Pantallas/LogIn.html');
+  }
+  next();
+}
 
 // LOGIN
 app.post('/login', async (req, res) => {
@@ -76,37 +87,31 @@ app.post('/registro', async (req, res) => {
   }
 });
 
-// RUTA /chats (Renderiza el HTML con el nombre del usuario en el sidebar)
-app.get('/chats', async (req, res) => {
-  // Verificar si la sesión del usuario está activa
-  if (!req.session.usuario) {
-    console.log('Usuario no autenticado');
-    return res.redirect('/Pantallas/LogIn.html'); // Redirige a la pantalla de login si no hay sesión
-  }
+// Cerrar sesión
+app.get('/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      console.error('Error cerrando sesión:', err);
+      return res.status(500).send('Error al cerrar sesión');
+    }
+    res.redirect('/Pantallas/LogIn.html');
+  });
+});
 
+// Página principal de chats
+app.get('/chats', requireLogin, async (req, res) => {
   try {
-    // Log para verificar que la sesión está funcionando correctamente
-    console.log('Usuario autenticado:', req.session.usuario); 
-
-    // Intentar leer el archivo 'Chats.html'
     const html = fs.readFileSync(path.join(__dirname, 'Pantallas', 'Chats.html'), 'utf8');
-    
-    // Reemplazar el marcador de posición '{{usuario}}' con el nombre de usuario
     const htmlConUsuario = html.replace('{{usuario}}', req.session.usuario.nombreUsuario);
-    
-    // Enviar el contenido del archivo HTML modificado al navegador
     res.send(htmlConUsuario);
   } catch (err) {
-    // Si hay un error al leer el archivo o procesarlo
     console.error('❌ Error al cargar Chats.html:', err);
-    res.status(500).send('Error interno'); // Enviar un error 500 al cliente
+    res.status(500).send('Error interno');
   }
 });
 
-//API para obtener usuarios disponibles (para crear chats)
-app.get('/api/usuarios', async (req, res) => {
-  if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-
+// Obtener lista de usuarios
+app.get('/api/usuarios', requireLogin, async (req, res) => {
   try {
     const usuarios = await Usuario.find({ _id: { $ne: req.session.usuario.id } }, 'nombreUsuario nombreCompleto');
     res.json(usuarios);
@@ -116,9 +121,9 @@ app.get('/api/usuarios', async (req, res) => {
   }
 });
 
-//Crear chat individual
-app.post('/api/chats/individual', async (req, res) => {
-  const userId = req.session.usuario?.id;
+// Crear chat individual
+app.post('/api/chats/individual', requireLogin, async (req, res) => {
+  const userId = req.session.usuario.id;
   const { receptorId } = req.body;
 
   try {
@@ -138,9 +143,9 @@ app.post('/api/chats/individual', async (req, res) => {
   }
 });
 
-//Crear chat grupal
-app.post('/api/chats/grupo', async (req, res) => {
-  const userId = req.session.usuario?.id;
+// Crear chat grupal
+app.post('/api/chats/grupo', requireLogin, async (req, res) => {
+  const userId = req.session.usuario.id;
   const { nombre, usuarios } = req.body;
 
   try {
@@ -162,9 +167,9 @@ app.post('/api/chats/grupo', async (req, res) => {
   }
 });
 
-//Enviar mensaje
-app.post('/api/mensajes', async (req, res) => {
-  const userId = req.session.usuario?.id;
+// Guardar mensaje
+app.post('/api/mensajes', requireLogin, async (req, res) => {
+  const userId = req.session.usuario.id;
   const { chatId, texto } = req.body;
 
   try {
@@ -173,6 +178,9 @@ app.post('/api/mensajes', async (req, res) => {
 
     await Chat.findByIdAndUpdate(chatId, { $push: { mensajes: mensaje._id } });
 
+    // Emitir mensaje a los sockets conectados
+    io.emit('mensajeRecibido', mensaje);
+
     res.json(mensaje);
   } catch (err) {
     console.error('Error al guardar mensaje:', err);
@@ -180,9 +188,25 @@ app.post('/api/mensajes', async (req, res) => {
   }
 });
 
-// WebSocket
+// Obtener mensajes de un chat
+app.get('/api/mensajes/:chatId', requireLogin, async (req, res) => {
+  try {
+    const mensajes = await Mensaje.find({ chat: req.params.chatId }).populate('sender', 'nombreUsuario');
+    res.json(mensajes);
+  } catch (err) {
+    console.error('Error obteniendo mensajes:', err);
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+// WebSockets
 io.on('connection', (socket) => {
   console.log('🟢 Un usuario se conectó');
+
+  socket.on('mensajeNuevo', (mensaje) => {
+    io.emit('mensajeRecibido', mensaje);
+  });
+
   socket.on('disconnect', () => {
     console.log('🔴 Un usuario se desconectó');
   });
@@ -190,5 +214,5 @@ io.on('connection', (socket) => {
 
 // Iniciar servidor
 server.listen(PORT, () => {
-  console.log(` Servidor corriendo en puerto ${PORT}`);
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
