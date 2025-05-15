@@ -38,8 +38,8 @@ app.use(session({
   }),
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 día
-    sameSite: 'lax',             // necesario para sesiones en Render
-    secure: process.env.NODE_ENV === 'production' // true si usas HTTPS
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production'
   }
 }));
 
@@ -48,23 +48,43 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'LogIn.html'));
 });
 
-
-//Lista de usuarios registrados
+// Obtener el usuario actual
 app.get('/api/usuario', async (req, res) => {
-  if (!req.session.usuarioId) {
-    return res.status(401).json({ error: 'No autenticado' });
-  }
-
-  const usuario = await Usuario.findById(req.session.usuarioId).select('nombreUsuario');
-  res.json(usuario);
-});
-
-// Obtener usuario actual desde la sesión
-app.get('/api/usuario-actual', (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ error: 'No autenticado' });
   }
-  res.json(req.session.usuario);
+
+  const usuario = await Usuario.findById(req.session.usuario._id).select('nombreUsuario');
+  res.json(usuario);
+});
+
+// Obtener todos los usuarios (excepto el actual)
+app.get('/api/usuarios', async (req, res) => {
+  if (!req.session.usuario) {
+    return res.status(401).json({ error: 'No autenticado' });
+  }
+
+  try {
+    const usuarios = await Usuario.find({ _id: { $ne: req.session.usuario._id } }).select('nombreUsuario');
+    res.json(usuarios);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener usuarios' });
+  }
+});
+
+// Obtener todos los chats del usuario
+app.get('/api/chats', async (req, res) => {
+  if (!req.session.usuario) {
+    return res.status(401).json({ error: 'No autenticado' });
+  }
+
+  try {
+    const usuarioId = req.session.usuario._id;
+    const chats = await Chat.find({ participantes: usuarioId }).populate('participantes', 'nombreUsuario');
+    res.json(chats);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los chats' });
+  }
 });
 
 // Inicio de sesión
@@ -102,7 +122,7 @@ app.post('/registro', async (req, res) => {
   }
 });
 
-// Usuarios conectados vía WebSocket
+// WebSocket: usuarios conectados
 const usuariosConectados = new Map();
 
 io.on('connection', (socket) => {
