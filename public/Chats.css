@@ -8,11 +8,11 @@ body {
 }
 
 
-/* Contenido principal */
 .main-content {
     flex: 1;
     padding: 20px;
 }
+
 
 .section-title {
     font-family: 'Exo 2', sans-serif;
@@ -64,21 +64,60 @@ body {
     color: #CCCCCC;
 }
 
-/*Modales*/
+/* Modales */
 .modal-content {
-    background-color: #FFFFFF; 
-    color: #000000; 
+    background-color: #FFFFFF;
+    color: #000000;
 }
 
 .modal-header h4, .modal-body, .modal-footer button {
-    color: #000000; 
+    color: #000000;
 }
 
 .modal-body ul li a {
-    color: #000000; 
+    color: #000000;
     text-decoration: none;
 }
 
 .modal-body ul li a:hover {
     text-decoration: underline;
+}
+
+
+
+
+.chat-card {
+    display: flex;
+    align-items: center;
+    background-color: #1E1E1E;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    color: #FFFFFF;
+}
+
+.chat-card:hover {
+    background-color: #8A2BE2;
+}
+
+
+.modal-style {
+    background-color: #121212;
+    color: #FFFFFF;
+}
+
+
+.select-style {
+    background-color: #1E1E1E;
+    color: #FFFFFF;
+    border: 1px solid #00FFFF;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.select-style option {
+    background-color: #1E1E1E;
+    color: #FFFFFF;
 }
