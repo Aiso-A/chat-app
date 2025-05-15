@@ -134,8 +134,8 @@ io.on('connection', (socket) => {
 });
 
 // Redirige al login si encuentra una página que no está en el proyecto
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'Pantallas', 'LogIn.html'));
+app.use((req, res, next) => {
+  res.sendFile(path.join(__dirname, 'public', 'LogIn.html'));
 });
 
 // Iniciar servidor
