@@ -133,10 +133,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Redirige al login si encuentra una página que no está en el proyecto
-app.use((req, res, next) => {
-  res.sendFile(path.join(__dirname, 'public', 'LogIn.html'));
-});
 
 // Iniciar servidor
 server.listen(PORT, () => {
