@@ -15,17 +15,17 @@
   <!-- Menú lateral -->
   <nav class="sidebar">
     <h2 class="app-title">ByteTalk</h2>
-    <p class="sidebar-user">Bienvenido, <span id="username">{{usuario}}</span></p>
     <ul>
       <li><a href="/Pantallas/Chats.html">Volver a chats</a></li>
       <li><a href="/Pantallas/Perfil.html">Perfil</a></li>
       <li><a href="/Pantallas/Admin.html">Tareas</a></li>
       <li><a href="/Pantallas/LogIn.html">Cerrar sesión</a></li>
     </ul>
+    <p id="username" class="text-light mt-3 ms-3"></p>
   </nav>
 
   <!-- Contenido de chats -->
-<div class="container mt-4">
+  <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h3>Chats Individuales</h3>
       <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevoChatModal">+ Nuevo chat</button>
@@ -84,21 +84,34 @@
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
 
   <!-- Script de lógica -->
   <script>
     let usuarioActual = null;
+    const socket = io();
 
+    // Obtener usuario actual una sola vez
     fetch('/api/usuario-actual')
       .then(res => res.json())
       .then(data => {
+        if (!data || !data._id) {
+          console.warn("⚠️ Usuario no autenticado");
+          return;
+        }
+
         usuarioActual = data;
         document.getElementById('username').textContent = data.nombreUsuario;
+        socket.emit('usuarioConectado', data.nombreUsuario);
+
         cargarUsuarios();
         cargarChats();
+      })
+      .catch(err => {
+        console.error('Error al obtener el usuario:', err);
       });
 
-    // Cargar usuarios para ambos modales
+    // Cargar usuarios para modales
     function cargarUsuarios() {
       fetch('/api/usuarios')
         .then(res => res.json())
@@ -142,11 +155,16 @@
     function crearGrupo() {
       const nombre = document.getElementById('nombreGrupo').value.trim();
       const usuariosSelect = document.getElementById('usuariosGrupo');
-      const seleccionados = Array.from(usuariosSelect.selectedOptions).map(opt => opt.value);
+      let seleccionados = Array.from(usuariosSelect.selectedOptions).map(opt => opt.value);
 
       if (nombre === '' || seleccionados.length < 2) {
         alert("Debes escribir un nombre y seleccionar al menos 2 usuarios.");
         return;
+      }
+
+      // Agregar al usuario actual si no está incluido
+      if (!seleccionados.includes(usuarioActual._id)) {
+        seleccionados.push(usuarioActual._id);
       }
 
       fetch('/api/chats/grupo', {
@@ -160,7 +178,7 @@
         });
     }
 
-    // Cargar chats
+    // Cargar chats existentes
     function cargarChats() {
       fetch('/api/chats')
         .then(res => res.json())
@@ -180,6 +198,13 @@
           });
         });
     }
+
+    // Manejo de sesión duplicada
+    socket.on('duplicado', () => {
+      alert('⚠️ Has iniciado sesión en otro dispositivo. Esta sesión se cerrará.');
+      window.location.href = '/Pantallas/LogIn.html';
+    });
   </script>
+
 </body>
 </html>
