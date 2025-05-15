@@ -1,10 +1,10 @@
-const express = require('express'); 
+const express = require('express');
 const path = require('path');
 const http = require('http');
 const socketIO = require('socket.io');
 const mongoose = require('mongoose');
 const session = require('express-session');
-const MongoStore = require('connect-mongo'); // ✅ Faltaba esta línea
+const MongoStore = require('connect-mongo');
 require('dotenv').config();
 
 // Models
@@ -36,7 +36,11 @@ app.use(session({
   store: MongoStore.create({
     mongoUrl: process.env.MONGO_URI,
   }),
-  cookie: { maxAge: 1000 * 60 * 60 * 24 } // 1 día
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24, // 1 día
+    sameSite: 'lax',             // necesario para sesiones en Render
+    secure: process.env.NODE_ENV === 'production' // true si usas HTTPS
+  }
 }));
 
 // Página principal (login)
@@ -44,14 +48,12 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'LogIn.html'));
 });
 
-// Obtener usuario actual (para Socket.io)
-app.get('/api/usuario', async (req, res) => {
-  if (!req.session.usuarioId) {
+// Obtener usuario actual desde la sesión
+app.get('/api/usuario-actual', (req, res) => {
+  if (!req.session.usuario) {
     return res.status(401).json({ error: 'No autenticado' });
   }
-
-  const usuario = await Usuario.findById(req.session.usuarioId).select('nombreUsuario');
-  res.json(usuario);
+  res.json(req.session.usuario);
 });
 
 // Inicio de sesión
@@ -63,7 +65,11 @@ app.post('/login', async (req, res) => {
     return res.send('<script>alert("Credenciales inválidas"); window.location.href="/";</script>');
   }
 
-  req.session.usuarioId = usuario._id;
+  req.session.usuario = {
+    _id: usuario._id,
+    nombreUsuario: usuario.nombreUsuario
+  };
+
   res.redirect('/Pantallas/Chats.html');
 });
 
@@ -72,7 +78,12 @@ app.post('/registro', async (req, res) => {
   try {
     const nuevoUsuario = new Usuario(req.body);
     await nuevoUsuario.save();
-    req.session.usuarioId = nuevoUsuario._id;
+
+    req.session.usuario = {
+      _id: nuevoUsuario._id,
+      nombreUsuario: nuevoUsuario.nombreUsuario
+    };
+
     res.redirect('/Pantallas/Chats.html');
   } catch (err) {
     console.error(err);
