@@ -48,6 +48,17 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'LogIn.html'));
 });
 
+
+//Lista de usuarios registrados
+app.get('/api/usuario', async (req, res) => {
+  if (!req.session.usuarioId) {
+    return res.status(401).json({ error: 'No autenticado' });
+  }
+
+  const usuario = await Usuario.findById(req.session.usuarioId).select('nombreUsuario');
+  res.json(usuario);
+});
+
 // Obtener usuario actual desde la sesión
 app.get('/api/usuario-actual', (req, res) => {
   if (!req.session.usuario) {
