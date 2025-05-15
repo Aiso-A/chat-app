@@ -1,3 +1,4 @@
+const cookieParser = require('cookie-parser');
 const express = require('express');
 const path = require('path');
 const http = require('http');
@@ -28,6 +29,8 @@ app.use(express.static(path.join(__dirname, 'Pantallas')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
+
 
 app.use(session({
   secret: process.env.SESSION_SECRET,
@@ -36,10 +39,10 @@ app.use(session({
   store: MongoStore.create({
     mongoUrl: process.env.MONGO_URI,
   }),
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 24, // 1 día
-    sameSite: 'lax',             // necesario para sesiones en Render
-    secure: process.env.NODE_ENV === 'production' // true si usas HTTPS
+ cookie: {
+    maxAge: 1000 * 60 * 60 * 24,
+    sameSite: 'none',
+    secure: true
   }
 }));
 
@@ -118,6 +121,11 @@ io.on('connection', (socket) => {
       }
     }
   });
+});
+
+//Redirige al login si encuentra una página que no está en el proyecto
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'Pantallas', 'LogIn.html'));
 });
 
 // Iniciar servidor

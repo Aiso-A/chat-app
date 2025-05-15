@@ -7,8 +7,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Exo+2:wght@800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/Chats.css" />
-  <link rel="stylesheet" href="/Sidebar.css" />
+  <link rel="stylesheet" href="../Chats.css" />
+  <link rel="stylesheet" href="../Sidebar.css" />
 </head>
 <body>
 
@@ -16,10 +16,10 @@
   <nav class="sidebar">
     <h2 class="app-title">ByteTalk</h2>
     <ul>
-      <li><a href="/Pantallas/Chats.html">Volver a chats</a></li>
-      <li><a href="/Pantallas/Perfil.html">Perfil</a></li>
-      <li><a href="/Pantallas/Admin.html">Tareas</a></li>
-      <li><a href="/Pantallas/LogIn.html">Cerrar sesión</a></li>
+      <li><a href="Chats.html">Volver a chats</a></li>
+      <li><a href="Perfil.html">Perfil</a></li>
+      <li><a href="Admin.html">Tareas</a></li>
+      <li><a href="LogIn.html">Cerrar sesión</a></li>
     </ul>
     <p id="username" class="text-light mt-3 ms-3"></p>
   </nav>
@@ -147,7 +147,7 @@
       })
         .then(res => res.json())
         .then(data => {
-          window.location.href = `/Pantallas/Chat.html?id=${data.chatId}&tipo=individual`;
+          window.location.href = `Chat.html?id=${data.chatId}&tipo=individual`;
         });
     }
 
@@ -174,7 +174,7 @@
       })
         .then(res => res.json())
         .then(data => {
-          window.location.href = `/Pantallas/Chat.html?id=${data.chatId}&tipo=grupo`;
+          window.location.href = `Chat.html?id=${data.chatId}&tipo=grupo`;
         });
     }
 
@@ -190,11 +190,11 @@
 
           data.individuales.forEach(chat => {
             const otro = chat.participantes.find(p => p._id !== usuarioActual._id);
-            indiv.innerHTML += `<div class="chat-card" onclick="window.location.href='/Pantallas/Chat.html?id=${chat._id}&tipo=individual'">${otro.nombreUsuario}</div>`;
+            indiv.innerHTML += `<div class="chat-card" onclick="window.location.href='Chat.html?id=${chat._id}&tipo=individual'">${otro.nombreUsuario}</div>`;
           });
 
           data.grupales.forEach(chat => {
-            grup.innerHTML += `<div class="chat-card" onclick="window.location.href='/Pantallas/Chat.html?id=${chat._id}&tipo=grupo'">${chat.nombre}</div>`;
+            grup.innerHTML += `<div class="chat-card" onclick="window.location.href='Chat.html?id=${chat._id}&tipo=grupo'">${chat.nombre}</div>`;
           });
         });
     }
@@ -202,7 +202,7 @@
     // Manejo de sesión duplicada
     socket.on('duplicado', () => {
       alert('⚠️ Has iniciado sesión en otro dispositivo. Esta sesión se cerrará.');
-      window.location.href = '/Pantallas/LogIn.html';
+      window.location.href = 'LogIn.html';
     });
   </script>
 
