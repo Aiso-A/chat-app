@@ -64,6 +64,34 @@ body {
     color: #CCCCCC;
 }
 
+ /* Estilo para chat cards */
+    .chat-card {
+      padding: 10px 15px;
+      margin-bottom: 8px;
+      background-color: #222;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+      font-family: 'Roboto Mono', monospace;
+      transition: background-color 0.2s, color 0.2s;
+    }
+    .chat-card:hover,
+    .chat-card:focus {
+      background-color: #00ffff;
+      color: #121212;
+      outline: none;
+      text-decoration: none;
+    }
+
+    /* Nombre de usuario en sidebar */
+    #username {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 1.1rem;
+      color: #00ffff;
+    }
+
 /*Modales*/
 .modal-content {
     background-color: #FFFFFF; 

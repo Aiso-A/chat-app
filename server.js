@@ -31,7 +31,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -39,12 +38,23 @@ app.use(session({
   store: MongoStore.create({
     mongoUrl: process.env.MONGO_URI,
   }),
- cookie: {
+  cookie: {
     maxAge: 1000 * 60 * 60 * 24,
     sameSite: 'none',
     secure: true
   }
 }));
+
+// Ruta para obtener lista de usuarios (con id y campos que necesitas)
+app.get('/api/usuarios', async (req, res) => {
+  try {
+    const usuarios = await Usuario.find({}, 'nombreUsuario email avatar _id');
+    res.json(usuarios);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error al obtener usuarios');
+  }
+});
 
 // Página principal (login)
 app.get('/', (req, res) => {
@@ -123,7 +133,7 @@ io.on('connection', (socket) => {
   });
 });
 
-//Redirige al login si encuentra una página que no está en el proyecto
+// Redirige al login si encuentra una página que no está en el proyecto
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'Pantallas', 'LogIn.html'));
 });
