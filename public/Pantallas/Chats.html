@@ -113,7 +113,7 @@
 
     // Cargar usuarios para modales
     function cargarUsuarios() {
-      fetch('/api/usuarios')
+      fetch('../api/usuarios')
         .then(res => res.json())
         .then(usuarios => {
           const selectInd = document.getElementById('usuariosSelect');
