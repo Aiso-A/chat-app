@@ -1,0 +1,107 @@
+/* Contenedor del chat centrado */
+.chat-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    font-family: 'Roboto Mono', monospace;
+}
+
+/* Tarjeta del chat */
+.card {
+    background-color: #1E1E1E;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+}
+
+/* Header del chat */
+.card-header {
+    background-color: #121212;
+    border-bottom: 1px solid #00FFFF;
+    color: #FFFFFF;
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 800;
+    font-style: italic;
+    padding: 0.75rem 1rem;
+}
+
+#chat-header img {
+    border: 2px solid #00FFFF;
+}
+
+#chat-header h5 {
+    margin: 0;
+    color: #00FFFF;
+}
+
+/* Área de mensajes */
+.card-body {
+    background-color: #1A1A1A;
+    overflow-y: auto;
+    padding: 1rem;
+    border-bottom: 1px solid #00FFFF;
+}
+
+/* Mensajes */
+.card-body div {
+    background-color: #2A2A2A;
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    color: #FFFFFF;
+    word-break: break-word;
+}
+
+.card-body div strong {
+    color: #00FFFF;
+}
+
+
+.card-footer {
+    background-color: #121212;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #00FFFF;
+}
+
+.card-footer input.form-control {
+    background-color: #2A2A2A;
+    border: 1px solid #00FFFF;
+    color: #FFFFFF;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.card-footer input.form-control::placeholder {
+    color: #CCCCCC;
+}
+
+.card-footer input.form-control:focus {
+    background-color: #2A2A2A;
+    border-color: #FF007F;
+    color: #FFFFFF;
+    box-shadow: 0 0 0 0.2rem rgba(255, 0, 127, 0.25);
+}
+
+
+.card-footer button.btn-primary {
+    background-color: #FF007F;
+    border: none;
+    font-weight: bold;
+}
+
+.card-footer button.btn-primary:hover {
+    background-color: #8A2BE2;
+}
+
+
+#back-btn {
+    font-size: 0.85rem;
+    font-family: 'Roboto Mono', monospace;
+    color: #00FFFF;
+    border: 1px solid #00FFFF;
+    background-color: transparent;
+}
+
+#back-btn:hover {
+    background-color: #00FFFF;
+    color: #121212;
+}

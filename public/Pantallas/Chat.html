@@ -18,7 +18,7 @@
   </style>
 </head>
 <body>
-
+<div class="main-wrapper d-flex"></div>
   <!-- Sidebar -->
   <nav class="sidebar">
     <h2 class="app-title">ByteTalk</h2>
@@ -28,6 +28,7 @@
       <li><a href="/Pantallas/Admin.html">Tareas</a></li>
       <li><a href="/LogIn.html">Cerrar sesión</a></li>
     </ul>
+    <p id="username" class="text-light mt-3 ms-3"></p>
   </nav>
 
   <!-- Contenedor del chat centrado -->
@@ -35,12 +36,12 @@
     <div class="card">
       <div class="card-header d-flex align-items-center justify-content-between">
         <div id="chat-header" class="d-flex align-items-center">
-       
+          <!-- Se inyecta aquí el nombre y la imagen del chat -->
         </div>
         <button class="btn btn-sm btn-outline-primary" id="back-btn">Volver</button>
       </div>
       <div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;">
-       
+        <!-- Los mensajes se cargarán aquí -->
       </div>
       <div class="card-footer">
         <form id="formularioMensaje" class="d-flex gap-2">
@@ -50,14 +51,14 @@
       </div>
     </div>
   </div>
-
+</div>
   <!-- Socket.io -->
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
     let usuarioActual = null;
     
-    // Verificar la sesión del usuario
+    // Verificar la sesión del usuario y unirse a la sala
     fetch('/api/usuario-actual')
       .then(res => res.json())
       .then(data => {
@@ -67,15 +68,13 @@
         }
         usuarioActual = data;
         
-        // Extraer parámetros y unirse a la sala
         const urlParams = new URLSearchParams(window.location.search);
         const chatId = urlParams.get('id');
         const tipo = urlParams.get('tipo'); 
         
-        
+        // Unirse a la sala para recibir mensajes en tiempo real.
         socket.emit('joinRoom', chatId);
         
-       
         loadChatInfo(chatId, tipo);
         loadMensajes(chatId);
       })
@@ -121,7 +120,7 @@
         .catch(err => console.error('Error al cargar mensajes:', err));
     }
     
-    // Enviar mensaje
+    // Enviar mensaje y agregarlo inmediatamente a la pantalla
     formulario.addEventListener('submit', async (e) => {
       e.preventDefault();
       const texto = inputMensaje.value.trim();
@@ -130,18 +129,24 @@
       const urlParams = new URLSearchParams(window.location.search);
       const chatId = urlParams.get('id');
       
-      
-      await fetch('/api/enviar-mensaje', {
+      const res = await fetch('/api/enviar-mensaje', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json'},
         body: JSON.stringify({ chatId, texto })
       });
+      const nuevoMensaje = await res.json();
+      
+      // Agregar el mensaje a la pantalla en formato "nombre: mensaje"
+      const div = document.createElement('div');
+      div.className = 'mb-2';
+      div.innerHTML = `<strong>${nuevoMensaje.sender.nombreUsuario}:</strong> ${nuevoMensaje.texto}`;
+      mensajesDiv.appendChild(div);
+      mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
       
       inputMensaje.value = '';
-     
     });
     
-    
+    // Listener: actualiza la pantalla cuando se recibe un nuevo mensaje vía Socket.io
     socket.on('nuevoMensaje', (mensaje) => {
       const div = document.createElement('div');
       div.className = 'mb-2';
@@ -150,7 +155,7 @@
       mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
     });
     
-   
+    // Botón para volver
     document.getElementById('back-btn').addEventListener('click', () => {
       window.location.href = "/Pantallas/Chats.html";
     });
