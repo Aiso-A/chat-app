@@ -136,14 +136,14 @@
         socket.emit('usuarioConectado', data.nombreUsuario);
 
         cargarUsuarios();
-        cargarChats();  // Actualiza la lista de chats
+        cargarChats();  
       })
       .catch(err => {
         console.error('Error al obtener el usuario:', err);
         window.location.href = "LogIn.html";
       });
 
-    // Los cambios en la lista se actualizan escuchando eventos vía Socket.io:
+    
     socket.on('nuevoChat', () => cargarChats());
     socket.on('chatActualizado', () => cargarChats());
 
@@ -158,12 +158,12 @@
           selectGrupo.innerHTML = '';
           usuarios.forEach(u => {
             if (u._id !== usuarioActual._id) {
-              // Opción para chat individual
+              //chat individual
               let opt1 = document.createElement('option');
               opt1.value = u._id;
               opt1.textContent = u.nombreUsuario;
               selectInd.appendChild(opt1);
-              // Opción para chat grupal
+              //chat grupal
               let opt2 = document.createElement('option');
               opt2.value = u._id;
               opt2.textContent = u.nombreUsuario;
@@ -186,7 +186,6 @@
       .then(data => {
         const nuevoChatModal = bootstrap.Modal.getInstance(document.getElementById('nuevoChatModal'));
         nuevoChatModal.hide();
-        // Emitir evento para actualizar la lista a todos:
         socket.emit('nuevoChat');
         window.location.href = `/Pantallas/Chat.html?id=${data.chatId}&tipo=individual`;
       })
@@ -241,9 +240,6 @@
               a.href = `Chat.html?id=${chat._id}&tipo=individual`;
               a.classList.add('chat-card');
               a.setAttribute('tabindex', '0');
-              /* Se espera que el endpoint de /api/chats retorne, para cada chat individual,
-                 las propiedades 'nombre' y 'avatar' correspondientes al otro usuario.
-              */
               a.innerHTML = `
                 <img src="${chat.avatar || '/default-avatar.png'}" alt="${chat.nombre}" />
                 <span>${chat.nombre || "Chat individual"}</span>
