@@ -40,8 +40,9 @@ app.use(session({
   }),
   cookie: {
     maxAge: 1000 * 60 * 60 * 24,
-    sameSite: 'lax', // Cambié 'none' a 'lax' para mejorar compatibilidad
-    secure: false // Cambié 'true' a 'false' para permitir funcionamiento sin HTTPS
+    sameSite: 'lax',         // Compatibilidad mejorada
+    secure: false,           // false para HTTP; en producción con HTTPS, usar true
+    path: '/'                // Importante para que la cookie sea válida en todas las rutas
   }
 }));
 
@@ -104,18 +105,16 @@ app.post('/registro', async (req, res) => {
   }
 });
 
-//Nuevos Chats
+// (Opcional) Endpoint de creación de chat individual alternativo
+// Puedes unificarlo con /api/chats/individual si lo prefieres.
 app.post('/api/nuevoChat', async (req, res) => {
   try {
-    // Extrae los usuarios del cuerpo de la petición:
     const { usuario1, usuario2 } = req.body;
-    // Crea el documento de chat en MongoDB
     const nuevoChat = new Chat({
       usuarios: [usuario1, usuario2],
       tipo: 'individual'
     });
     await nuevoChat.save();
-
     res.json({ mensaje: 'Chat creado correctamente', chatId: nuevoChat._id });
   } catch (error) {
     console.error(error);
@@ -127,14 +126,9 @@ app.post('/api/nuevoChat', async (req, res) => {
 app.get('/api/chats', async (req, res) => {
   try {
     if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-    
-    // Busca chats que incluyan al usuario actual
     const chats = await Chat.find({ usuarios: req.session.usuario._id });
-    
-
     const individuales = chats.filter(chat => chat.tipo === 'individual');
     const grupales = chats.filter(chat => chat.tipo === 'grupo');
-    
     res.json({ individuales, grupales });
   } catch (error) {
     console.error(error);
@@ -142,17 +136,14 @@ app.get('/api/chats', async (req, res) => {
   }
 });
 
-
 app.post('/api/chats/individual', async (req, res) => {
   try {
     const { receptorId } = req.body;
     if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-    
     const nuevoChat = new Chat({
       tipo: 'individual',
       usuarios: [req.session.usuario._id, receptorId]
     });
-    
     await nuevoChat.save();
     res.json({ mensaje: 'Chat individual creado', chatId: nuevoChat._id });
   } catch (error) {
@@ -165,22 +156,18 @@ app.post('/api/chats/grupo', async (req, res) => {
   try {
     const { nombre, usuarios } = req.body;
     if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-    
     const usuarioActualId = req.session.usuario._id.toString();
     if (!usuarios.includes(usuarioActualId)) {
       usuarios.push(usuarioActualId);
     }
-    
     if (!nombre || usuarios.length < 3) {
       return res.status(400).json({ error: 'Faltan datos o usuarios insuficientes' });
     }
-    
     const nuevoGrupo = new Chat({
       tipo: 'grupo',
       nombre,
       usuarios,
     });
-    
     await nuevoGrupo.save();
     res.json({ mensaje: 'Grupo creado', chatId: nuevoGrupo._id });
   } catch (error) {
@@ -189,8 +176,7 @@ app.post('/api/chats/grupo', async (req, res) => {
   }
 });
 
-
-//Información de los chats
+// Información de los chats
 app.get('/api/chat-info', async (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ error: 'No autenticado' });
@@ -201,9 +187,8 @@ app.get('/api/chat-info', async (req, res) => {
     if (!chat) {
       return res.status(404).json({ error: 'Chat no encontrado' });
     }
-    
     if (tipo === 'individual') {
-      const otherUser = chat.usuarios.find(u => 
+      const otherUser = chat.usuarios.find(u =>
         u._id.toString() !== req.session.usuario._id.toString()
       );
       if (!otherUser) return res.status(404).json({ error: 'Usuario receptor no encontrado' });
@@ -220,15 +205,13 @@ app.get('/api/chat-info', async (req, res) => {
   }
 });
 
-
-//Historial de mensajes en el chat
+// Historial de mensajes en el chat
 app.get('/api/mensajes', async (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ error: 'No autenticado' });
   }
   const { chatId } = req.query;
   try {
-    // Buscar mensajes que pertenezcan al chat, y extraer el nombre del sender
     const mensajes = await Mensaje.find({ chat: chatId })
       .populate('sender', 'nombreUsuario')
       .sort({ fecha: 1 });
@@ -239,7 +222,7 @@ app.get('/api/mensajes', async (req, res) => {
   }
 });
 
-//Recepción de mensajes
+// Recepción de mensajes
 app.post('/api/enviar-mensaje', async (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ error: 'No autenticado' });
@@ -252,14 +235,10 @@ app.post('/api/enviar-mensaje', async (req, res) => {
       texto
     });
     await nuevoMensaje.save();
-
-    
     const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id)
       .populate('sender', 'nombreUsuario');
-
-
+    // Emitir mensaje a la sala correspondiente para actualización en tiempo real
     io.to(chatId).emit('nuevoMensaje', mensajeConInfo);
-
     res.json(mensajeConInfo);
   } catch (error) {
     console.error(error);
@@ -267,13 +246,17 @@ app.post('/api/enviar-mensaje', async (req, res) => {
   }
 });
 
-
-
 // Usuarios conectados vía WebSocket
 const usuariosConectados = new Map();
 
 io.on('connection', (socket) => {
   console.log('🟢 Un usuario se conectó');
+
+  // Permitir que un socket se una a una sala de chat
+  socket.on('joinRoom', (chatId) => {
+    socket.join(chatId);
+    console.log(`Socket ${socket.id} se unió a la sala ${chatId}`);
+  });
 
   socket.on('usuarioConectado', (nombreUsuario) => {
     if (usuariosConectados.has(nombreUsuario)) {
@@ -282,7 +265,6 @@ io.on('connection', (socket) => {
       io.sockets.sockets.get(socketIdAnterior)?.disconnect();
       console.log(`🔁 Usuario ${nombreUsuario} inició sesión en otro lugar. Cerrando la sesión anterior.`);
     }
-
     usuariosConectados.set(nombreUsuario, socket.id);
     console.log(`✅ ${nombreUsuario} está conectado (${socket.id})`);
   });
@@ -298,10 +280,9 @@ io.on('connection', (socket) => {
   });
 });
 
-// Redirige al login si encuentra una página que no está en el proyecto
+// Middleware catch-all: si se solicita una ruta no definida, redirige al login
 app.use((req, res, next) => {
   res.sendFile(path.resolve(__dirname, 'public', 'LogIn.html'));
-
 });
 
 // Iniciar servidor
