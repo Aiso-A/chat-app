@@ -9,6 +9,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/Chats.css" />
   <link rel="stylesheet" href="/Sidebar.css" />
+  <style>
+    .chat-container {
+      max-width: 800px;
+      margin: 2rem auto; 
+      padding: 0 1rem;
+    }
+  </style>
 </head>
 <body>
 
@@ -23,17 +30,17 @@
     </ul>
   </nav>
 
-  <!-- Contenedor del chat -->
-  <div class="container mt-4" style="margin-left: 260px;">
+  <!-- Contenedor del chat centrado -->
+  <div class="chat-container">
     <div class="card">
       <div class="card-header d-flex align-items-center justify-content-between">
         <div id="chat-header" class="d-flex align-items-center">
-          <!-- Se inyectará el avatar y nombre o el nombre del grupo -->
+       
         </div>
         <button class="btn btn-sm btn-outline-primary" id="back-btn">Volver</button>
       </div>
       <div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;">
-        <!-- Los mensajes se cargarán aquí -->
+       
       </div>
       <div class="card-footer">
         <form id="formularioMensaje" class="d-flex gap-2">
@@ -60,15 +67,15 @@
         }
         usuarioActual = data;
         
-        // Una vez verificado el usuario, obtenemos parámetros y nos unimos a la sala
+        // Extraer parámetros y unirse a la sala
         const urlParams = new URLSearchParams(window.location.search);
         const chatId = urlParams.get('id');
-        const tipo = urlParams.get('tipo'); // 'individual' o 'grupo'
+        const tipo = urlParams.get('tipo'); 
         
-        // Unirse a la sala correspondiente para recibir mensajes en tiempo real
+        
         socket.emit('joinRoom', chatId);
         
-        // Cargar información del chat y mensajes
+       
         loadChatInfo(chatId, tipo);
         loadMensajes(chatId);
       })
@@ -87,13 +94,11 @@
         .then(data => {
           const chatHeader = document.getElementById('chat-header');
           if (tipo === 'individual') {
-            // Muestra avatar y nombre del otro usuario
             chatHeader.innerHTML = `
               <img src="${data.avatar || '/default-avatar.png'}" alt="${data.nombre}" style="width:40px;height:40px;border-radius:50%;margin-right:10px;">
               <h5 class="mb-0">${data.nombre}</h5>
             `;
           } else {
-            // Muestra nombre del grupo
             chatHeader.innerHTML = `<h5 class="mb-0">${data.nombre}</h5>`;
           }
         })
@@ -125,23 +130,18 @@
       const urlParams = new URLSearchParams(window.location.search);
       const chatId = urlParams.get('id');
       
-      const res = await fetch('/api/enviar-mensaje', {
+      
+      await fetch('/api/enviar-mensaje', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json'},
         body: JSON.stringify({ chatId, texto })
       });
       
-      const nuevoMensaje = await res.json();
-      // Agregar el mensaje enviado al chat
-      const div = document.createElement('div');
-      div.className = 'mb-2';
-      div.innerHTML = `<strong>${nuevoMensaje.sender.nombreUsuario}:</strong> ${nuevoMensaje.texto}`;
-      mensajesDiv.appendChild(div);
       inputMensaje.value = '';
-      mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
+     
     });
     
-    // Escuchar en tiempo real mensajes nuevos
+    
     socket.on('nuevoMensaje', (mensaje) => {
       const div = document.createElement('div');
       div.className = 'mb-2';
@@ -150,7 +150,7 @@
       mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
     });
     
-    // Botón para volver a la lista de chats
+   
     document.getElementById('back-btn').addEventListener('click', () => {
       window.location.href = "/Pantallas/Chats.html";
     });
