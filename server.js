@@ -83,7 +83,7 @@ app.post('/login', async (req, res) => {
     nombreUsuario: usuario.nombreUsuario
   };
 
-  res.redirect('/Pantallas/Chats.html'); //Si te dio error, quita Pantallas dejando solo /Chats.html
+  res.redirect('/Pantallas/Chats.html'); 
 });
 
 // Registro
@@ -103,6 +103,88 @@ app.post('/registro', async (req, res) => {
     res.send('<script>alert("Error al registrarse. Intenta con otro correo o nombre de usuario."); window.location.href="/";</script>');
   }
 });
+
+//Nuevos Chats
+app.post('/api/nuevoChat', async (req, res) => {
+  try {
+    // Extrae los usuarios del cuerpo de la petición:
+    const { usuario1, usuario2 } = req.body;
+    // Crea el documento de chat en MongoDB
+    const nuevoChat = new Chat({
+      usuarios: [usuario1, usuario2],
+      tipo: 'individual'
+    });
+    await nuevoChat.save();
+
+    res.json({ mensaje: 'Chat creado correctamente', chatId: nuevoChat._id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al crear chat individual' });
+  }
+});
+
+// Obtener chats asociados al usuario actualmente autenticado
+app.get('/api/chats', async (req, res) => {
+  try {
+    if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
+    
+    // Busca chats que incluyan al usuario actual
+    const chats = await Chat.find({ usuarios: req.session.usuario._id });
+    
+
+    const individuales = chats.filter(chat => chat.tipo === 'individual');
+    const grupales = chats.filter(chat => chat.tipo === 'grupo');
+    
+    res.json({ individuales, grupales });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al cargar los chats' });
+  }
+});
+
+app.post('/api/chats/individual', async (req, res) => {
+  try {
+   
+    const { receptorId } = req.body;
+    if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
+    
+    
+    const nuevoChat = new Chat({
+      tipo: 'individual',
+      usuarios: [req.session.usuario._id, receptorId],
+      
+    });
+    await nuevoChat.save();
+    res.json({ mensaje: 'Chat individual creado', chatId: nuevoChat._id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al crear chat individual' });
+  }
+});
+
+app.post('/api/chats/grupo', async (req, res) => {
+  try {
+    const { nombre, usuarios } = req.body;
+    if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
+    
+    // Se espera que 'usuarios' contenga al menos 2 IDs, y ya agregaste el ID del usuario actual en el frontend.
+    if (!nombre || !Array.isArray(usuarios) || usuarios.length < 3) {
+      return res.status(400).json({ error: 'Faltan datos o usuarios insuficientes' });
+    }
+    
+    const nuevoGrupo = new Chat({
+      tipo: 'grupo',
+      nombre,
+      usuarios,
+    });
+    await nuevoGrupo.save();
+    res.json({ mensaje: 'Grupo creado', chatId: nuevoGrupo._id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al crear grupo' });
+  }
+});
+
 
 // Usuarios conectados vía WebSocket
 const usuariosConectados = new Map();
@@ -135,7 +217,8 @@ io.on('connection', (socket) => {
 
 // Redirige al login si encuentra una página que no está en el proyecto
 app.use((req, res, next) => {
-  res.sendFile(path.join(__dirname, 'public', 'LogIn.html'));
+  res.sendFile(path.resolve(__dirname, 'public', 'LogIn.html'));
+
 });
 
 // Iniciar servidor

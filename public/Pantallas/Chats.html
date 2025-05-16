@@ -20,7 +20,7 @@
       <li><a href="/Pantallas/Chats.html">Volver a chats</a></li>
       <li><a href="/Pantallas/Perfil.html">Perfil</a></li>
       <li><a href="/Pantallas/Admin.html">Tareas</a></li>
-      <li><a href="/Pantallas/LogIn.html">Cerrar sesión</a></li>
+      <li><a href="/LogIn.html">Cerrar sesión</a></li>
     </ul>
     <p id="username" class="text-light mt-3 ms-3"></p>
   </nav>
@@ -118,86 +118,84 @@
         window.location.href = "LogIn.html";
       });
 
-    // Cargar usuarios para modales
-    function cargarUsuarios() {
-      fetch('/api/usuarios')
-        .then(res => res.json())
-        .then(usuarios => {
-          const selectInd = document.getElementById('usuariosSelect');
-          const selectGrupo = document.getElementById('usuariosGrupo');
-          selectInd.innerHTML = '';
-          selectGrupo.innerHTML = '';
+   // Cargar usuarios para modales
+function cargarUsuarios() {
+  fetch('/api/usuarios')
+    .then(res => res.json())
+    .then(usuarios => {
+      const selectInd = document.getElementById('usuariosSelect');
+      const selectGrupo = document.getElementById('usuariosGrupo');
+      selectInd.innerHTML = '';
+      selectGrupo.innerHTML = '';
 
-          usuarios.forEach(u => {
-            if (u._id !== usuarioActual._id) {
-              let opt1 = document.createElement('option');
-              opt1.value = u._id;
-              opt1.textContent = u.nombreUsuario;
-              selectInd.appendChild(opt1);
+      usuarios.forEach(u => {
+        if (u._id !== usuarioActual._id) {
+          //chat individual
+          let opt1 = document.createElement('option');
+          opt1.value = u._id;
+          opt1.textContent = u.nombreUsuario;
+          selectInd.appendChild(opt1);
 
-              let opt2 = document.createElement('option');
-              opt2.value = u._id;
-              opt2.textContent = u.nombreUsuario;
-              selectGrupo.appendChild(opt2);
-            }
-          });
-        })
-        .catch(err => console.error('Error al cargar usuarios:', err));
-    }
+          //chat grupal
+          let opt2 = document.createElement('option');
+          opt2.value = u._id;
+          opt2.textContent = u.nombreUsuario;
+          selectGrupo.appendChild(opt2);
+        }
+      });
+    })
+    .catch(err => console.error('Error al cargar usuarios:', err));
+}
 
-    // Crear chat individual
-    function crearChatIndividual() {
-      const userId = document.getElementById('usuariosSelect').value;
-      fetch('/api/chats/individual', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ receptorId: userId })
-      })
-        .then(res => res.json())
-        .then(data => {
-          // Cerrar modal
-          const nuevoChatModal = bootstrap.Modal.getInstance(document.getElementById('nuevoChatModal'));
-          nuevoChatModal.hide();
-          // Redirigir
-          window.location.href = `Chat.html?id=${data.chatId}&tipo=individual`;
-        })
-        .catch(err => alert('Error al crear chat individual: ' + err));
-    }
+// Crear chat individual
+function crearChatIndividual() {
+  const userId = document.getElementById('usuariosSelect').value;
+  fetch('/api/chats/individual', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ receptorId: userId })
+  })
+    .then(res => res.json())
+    .then(data => {
+      const nuevoChatModal = bootstrap.Modal.getInstance(document.getElementById('nuevoChatModal'));
+      nuevoChatModal.hide();
+      
+      window.location.href = `/Pantallas/Chat.html?id=${data.chatId}&tipo=individual`;
+    })
+    .catch(err => alert('Error al crear chat individual: ' + err));
+}
 
-    // Crear grupo
-    function crearGrupo() {
-      const nombre = document.getElementById('nombreGrupo').value.trim();
-      const usuariosSelect = document.getElementById('usuariosGrupo');
-      let seleccionados = Array.from(usuariosSelect.selectedOptions).map(opt => opt.value);
+// Crear grupo
+function crearGrupo() {
+  const nombre = document.getElementById('nombreGrupo').value.trim();
+  const usuariosSelect = document.getElementById('usuariosGrupo');
+  let seleccionados = Array.from(usuariosSelect.selectedOptions).map(opt => opt.value);
 
-      if (nombre === '' || seleccionados.length < 2) {
-        alert("Debes escribir un nombre y seleccionar al menos 2 usuarios.");
-        return;
-      }
+  if (nombre === '' || seleccionados.length < 2) {
+    alert("Debes escribir un nombre y seleccionar al menos 2 usuarios.");
+    return;
+  }
 
-      // Agregar al usuario actual si no está incluido
-      if (!seleccionados.includes(usuarioActual._id)) {
-        seleccionados.push(usuarioActual._id);
-      }
+  if (!seleccionados.includes(usuarioActual._id)) {
+    seleccionados.push(usuarioActual._id);
+  }
 
-      fetch('/api/chats/grupo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, usuarios: seleccionados })
-      })
-        .then(res => res.json())
-        .then(data => {
-          // Cerrar modal y limpiar inputs
-          const nuevoGrupoModal = bootstrap.Modal.getInstance(document.getElementById('nuevoGrupoModal'));
-          nuevoGrupoModal.hide();
-          document.getElementById('nombreGrupo').value = '';
-          usuariosSelect.selectedIndex = -1;
+  fetch('/api/chats/grupo', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre, usuarios: seleccionados })
+  })
+    .then(res => res.json())
+    .then(data => {
+      const nuevoGrupoModal = bootstrap.Modal.getInstance(document.getElementById('nuevoGrupoModal'));
+      nuevoGrupoModal.hide();
+      document.getElementById('nombreGrupo').value = '';
+      usuariosSelect.selectedIndex = -1;
 
-          // Redirigir
-          window.location.href = `Chat.html?id=${data.chatId}&tipo=grupo`;
-        })
-        .catch(err => alert('Error al crear grupo: ' + err));
-    }
+      window.location.href = `/Pantallas/Chat.html?id=${data.chatId}&tipo=grupo`;
+    })
+    .catch(err => alert('Error al crear grupo: ' + err));
+}
 
     // Cargar chats
     function cargarChats() {
@@ -210,12 +208,11 @@
           individualesDiv.innerHTML = '';
           grupalesDiv.innerHTML = '';
 
-          // Mostrar mensaje si no hay chats individuales
+          // Mensaje si no hay chats individuales
           if (!data.individuales || data.individuales.length === 0) {
             individualesDiv.innerHTML = '<p class="text-muted fst-italic">No tienes chats individuales.</p>';
           } else {
             data.individuales.forEach(chat => {
-              // Usar <a> para accesibilidad
               const a = document.createElement('a');
               a.href = `Chat.html?id=${chat._id}&tipo=individual`;
               a.classList.add('chat-card');
@@ -225,7 +222,7 @@
             });
           }
 
-          // Mostrar mensaje si no hay chats grupales
+          // Mensaje si no hay chats grupales
           if (!data.grupales || data.grupales.length === 0) {
             grupalesDiv.innerHTML = '<p class="text-muted fst-italic">No tienes chats grupales.</p>';
           } else {

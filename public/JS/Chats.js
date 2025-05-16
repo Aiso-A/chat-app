@@ -20,7 +20,7 @@ async function cargarUsuarios() {
       if (u.email !== miCorreo) {
         const option = document.createElement('option');
         option.value = u.email;
-        option.textContent = `${u.username} (${u.email})`;
+        option.textContent = `${u.nombreUsuario} (${u.email})`;
         select.appendChild(option);
       }
     });
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Cerrar sesión
   document.getElementById('cerrarSesion').addEventListener('click', () => {
     sessionStorage.clear();
-    window.location.href = '/Pantallas/LogIn.html';
+    window.location.href = '/LogIn.html';
   });
 
   // Enviar formulario de nuevo chat
