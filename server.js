@@ -207,6 +207,55 @@ app.post('/api/enviar-mensaje', async (req, res) => {
   }
 });
 
+app.get('/api/chat-info', async (req, res) => {
+  if (!req.session.usuario) {
+    return res.status(401).json({ error: 'No autenticado' });
+  }
+
+  const { id, tipo } = req.query;
+  try {
+    const chat = await Chat.findById(id).populate('usuarios', 'nombreUsuario avatar');
+    if (!chat) {
+      return res.status(404).json({ error: 'Chat no encontrado' });
+    }
+
+    if (tipo === 'individual') {
+      // Encuentra al otro usuario en el chat
+      const otroUsuario = chat.usuarios.find(u => u._id.toString() !== req.session.usuario._id.toString());
+      if (!otroUsuario) return res.status(404).json({ error: 'Usuario receptor no encontrado' });
+
+      return res.json({ 
+        nombre: otroUsuario.nombreUsuario, 
+        avatar: otroUsuario.avatar 
+      });
+    } else {
+      return res.json({ nombre: chat.nombre });
+    }
+  } catch (error) {
+    console.error('Error al obtener info del chat:', error);
+    res.status(500).json({ error: 'Error interno al obtener la información del chat' });
+  }
+});
+
+app.get('/api/mensajes', async (req, res) => {
+  if (!req.session.usuario) {
+    return res.status(401).json({ error: 'No autenticado' });
+  }
+
+  const { chatId } = req.query;
+  try {
+    const mensajes = await Mensaje.find({ chat: chatId })
+      .populate('sender', 'nombreUsuario')
+      .sort({ fecha: 1 }); // Orden ascendente por fecha
+
+    res.json(mensajes);
+  } catch (error) {
+    console.error('Error al cargar mensajes:', error);
+    res.status(500).json({ error: 'Error interno al obtener los mensajes' });
+  }
+});
+
+
 // Middleware catch-all
 app.use((req, res, next) => {
   res.sendFile(path.resolve(__dirname, 'public', 'LogIn.html'));

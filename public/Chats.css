@@ -14,6 +14,11 @@ body {
     padding: 20px;
 }
 
+@media (max-width: 768px) {
+  .chat-container {
+    max-width: 100%;
+  }
+}
 .section-title {
     font-family: 'Exo 2', sans-serif;
     font-style: italic;
