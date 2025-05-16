@@ -27,13 +27,13 @@
   <div class="container mt-4" style="margin-left: 260px;">
     <div class="card">
       <div class="card-header d-flex align-items-center justify-content-between">
-        <div>
-          <h5 id="chat-title" class="mb-0">Chat</h5>
+        <div id="chat-header" class="d-flex align-items-center">
+          <!-- Aquí se inyectará el avatar y el nombre -->
         </div>
         <button class="btn btn-sm btn-outline-primary" id="back-btn">Volver</button>
       </div>
       <div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;">
-        <!-- Aquí se cargan los mensajes -->
+        <!-- Los mensajes se cargarán aquí -->
       </div>
       <div class="card-footer">
         <form id="formularioMensaje" class="d-flex gap-2">
@@ -44,10 +44,32 @@
     </div>
   </div>
 
+  <!-- Socket.io -->
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
 
+    let usuarioActual = null;
+
+    // Verificar que hay una sesión activa
+    fetch('/api/usuario-actual')
+      .then(res => res.json())
+      .then(data => {
+        if (!data || !data._id) {
+          window.location.href = '/LogIn.html';
+          return;
+        }
+        usuarioActual = data;
+        // Una vez autenticado, se carga la info del chat y los mensajes
+        loadChatInfo();
+        loadMensajes();
+      })
+      .catch(err => {
+        console.error('Error al obtener usuario actual:', err);
+        window.location.href = '/LogIn.html';
+      });
+
+    // Obtén los parámetros de la URL
     const urlParams = new URLSearchParams(window.location.search);
     const chatId = urlParams.get('id');
     const tipo = urlParams.get('tipo'); // 'individual' o 'grupo'
@@ -55,27 +77,43 @@
     const mensajesDiv = document.getElementById('mensajes');
     const formulario = document.getElementById('formularioMensaje');
     const inputMensaje = document.getElementById('mensaje');
-    const chatTitle = document.getElementById('chat-title');
 
-    // Cargar nombre del chat
-    fetch(`/api/chat-info?id=${chatId}&tipo=${tipo}`)
-      .then(res => res.json())
-      .then(data => {
-        chatTitle.textContent = data.nombre;
-      });
+    // Función para cargar la información del chat (nombre, avatar, etc.)
+    function loadChatInfo() {
+      fetch(`/api/chat-info?id=${chatId}&tipo=${tipo}`)
+        .then(res => res.json())
+        .then(data => {
+          const chatHeader = document.getElementById('chat-header');
+          if (tipo === 'individual') {
+            // En chat individual, mostramos el avatar y el nombre del otro usuario
+            chatHeader.innerHTML = `
+              <img src="${data.avatar || '/default-avatar.png'}" alt="${data.nombre}" style="width:40px;height:40px;border-radius:50%;margin-right:10px;">
+              <h5 class="mb-0">${data.nombre}</h5>
+            `;
+          } else {
+            // En chat grupal, mostramos el nombre del grupo
+            chatHeader.innerHTML = `<h5 class="mb-0">${data.nombre}</h5>`;
+          }
+        })
+        .catch(err => console.error('Error al cargar info del chat:', err));
+    }
 
-    // Cargar mensajes
-    fetch(`/api/mensajes?chatId=${chatId}`)
-      .then(res => res.json())
-      .then(mensajes => {
-        mensajes.forEach(m => {
-          const div = document.createElement('div');
-          div.className = 'mb-2';
-          div.innerHTML = `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto}`;
-          mensajesDiv.appendChild(div);
-        });
-        mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
-      });
+    // Función para cargar el historial de mensajes
+    function loadMensajes() {
+      fetch(`/api/mensajes?chatId=${chatId}`)
+        .then(res => res.json())
+        .then(mensajes => {
+          mensajesDiv.innerHTML = '';
+          mensajes.forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'mb-2';
+            div.innerHTML = `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto}`;
+            mensajesDiv.appendChild(div);
+          });
+          mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
+        })
+        .catch(err => console.error('Error al cargar mensajes:', err));
+    }
 
     // Enviar mensaje
     formulario.addEventListener('submit', async (e) => {
@@ -85,12 +123,11 @@
 
       const res = await fetch('/api/enviar-mensaje', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json'},
         body: JSON.stringify({ chatId, texto })
       });
 
       const nuevoMensaje = await res.json();
-
       const div = document.createElement('div');
       div.className = 'mb-2';
       div.innerHTML = `<strong>${nuevoMensaje.sender.nombreUsuario}:</strong> ${nuevoMensaje.texto}`;

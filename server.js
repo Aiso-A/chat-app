@@ -192,6 +192,84 @@ app.post('/api/chats/grupo', async (req, res) => {
   }
 });
 
+//Información de los chats
+app.get('/api/chat-info', async (req, res) => {
+  if (!req.session.usuario) {
+    return res.status(401).json({ error: 'No autenticado' });
+  }
+  const { id, tipo } = req.query;
+  try {
+   
+    const chat = await Chat.findById(id).populate('usuarios', 'nombreUsuario avatar');
+    if (!chat) {
+      return res.status(404).json({ error: 'Chat no encontrado' });
+    }
+    
+    if (tipo === 'individual') {
+     
+      const otherUser = chat.usuarios.find(u => 
+        u._id.toString() !== req.session.usuario._id.toString()
+      );
+      if (!otherUser) return res.status(404).json({ error: 'Usuario receptor no encontrado' });
+      return res.json({ 
+        nombre: otherUser.nombreUsuario, 
+        avatar: otherUser.avatar 
+      });
+    } else {
+      return res.json({ nombre: chat.nombre });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener info del chat' });
+  }
+});
+
+//Historial de mensajes en el chat
+app.get('/api/mensajes', async (req, res) => {
+  if (!req.session.usuario) {
+    return res.status(401).json({ error: 'No autenticado' });
+  }
+  const { chatId } = req.query;
+  try {
+    // Buscar mensajes que pertenezcan al chat, y extraer el nombre del sender
+    const mensajes = await Mensaje.find({ chat: chatId })
+      .populate('sender', 'nombreUsuario')
+      .sort({ fecha: 1 });
+    res.json(mensajes);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al cargar mensajes' });
+  }
+});
+
+//Recepción de mensajes
+app.post('/api/enviar-mensaje', async (req, res) => {
+  if (!req.session.usuario) {
+    return res.status(401).json({ error: 'No autenticado' });
+  }
+  const { chatId, texto } = req.body;
+  try {
+    const nuevoMensaje = new Mensaje({
+      chat: chatId,
+      sender: req.session.usuario._id,
+      texto
+    });
+    await nuevoMensaje.save();
+
+    
+    const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id)
+      .populate('sender', 'nombreUsuario');
+
+
+    io.to(chatId).emit('nuevoMensaje', mensajeConInfo);
+
+    res.json(mensajeConInfo);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al enviar mensaje' });
+  }
+});
+
 
 
 // Usuarios conectados vía WebSocket
