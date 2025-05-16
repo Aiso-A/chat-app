@@ -46,6 +46,10 @@ app.use(session({
   }
 }));
 
+
+///////Endpoints///////
+
+
 // Obtener lista de usuarios
 app.get('/api/usuarios', async (req, res) => {
   try {
@@ -74,16 +78,13 @@ app.get('/api/usuario-actual', (req, res) => {
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   const usuario = await Usuario.findOne({ email });
-
   if (!usuario || !(await usuario.comparePassword(password))) {
     return res.send('<script>alert("Credenciales inválidas"); window.location.href="/";</script>');
   }
-
   req.session.usuario = {
     _id: usuario._id,
     nombreUsuario: usuario.nombreUsuario
   };
-
   res.redirect('/Pantallas/Chats.html'); 
 });
 
@@ -185,7 +186,6 @@ app.post('/api/chats/grupo', async (req, res) => {
 // Enviar mensaje en un chat
 app.post('/api/enviar-mensaje', async (req, res) => {
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-
   const { chatId, texto } = req.body;
   try {
     const nuevoMensaje = new Mensaje({
@@ -193,13 +193,10 @@ app.post('/api/enviar-mensaje', async (req, res) => {
       sender: req.session.usuario._id,
       texto
     });
-
     await nuevoMensaje.save();
-
     const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
-
+    // Emitir el mensaje a todos los sockets que estén en la sala (es decir, en ese chat)
     io.to(chatId).emit('nuevoMensaje', mensajeConInfo);
-
     res.json(mensajeConInfo);
   } catch (error) {
     console.error(error);
@@ -207,23 +204,21 @@ app.post('/api/enviar-mensaje', async (req, res) => {
   }
 });
 
+// Obtener información de un chat (para header)
+// Para chats individuales, devuelve datos del otro usuario; para grupales, el nombre del grupo.
 app.get('/api/chat-info', async (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ error: 'No autenticado' });
   }
-
   const { id, tipo } = req.query;
   try {
     const chat = await Chat.findById(id).populate('usuarios', 'nombreUsuario avatar');
     if (!chat) {
       return res.status(404).json({ error: 'Chat no encontrado' });
     }
-
     if (tipo === 'individual') {
-      // Encuentra al otro usuario en el chat
       const otroUsuario = chat.usuarios.find(u => u._id.toString() !== req.session.usuario._id.toString());
       if (!otroUsuario) return res.status(404).json({ error: 'Usuario receptor no encontrado' });
-
       return res.json({ 
         nombre: otroUsuario.nombreUsuario, 
         avatar: otroUsuario.avatar 
@@ -237,17 +232,16 @@ app.get('/api/chat-info', async (req, res) => {
   }
 });
 
+// Obtener el historial de mensajes del chat
 app.get('/api/mensajes', async (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ error: 'No autenticado' });
   }
-
   const { chatId } = req.query;
   try {
     const mensajes = await Mensaje.find({ chat: chatId })
       .populate('sender', 'nombreUsuario')
-      .sort({ fecha: 1 }); // Orden ascendente por fecha
-
+      .sort({ fecha: 1 }); // Orden ascendente (los mensajes se muestran desde el más antiguo al más reciente)
     res.json(mensajes);
   } catch (error) {
     console.error('Error al cargar mensajes:', error);
@@ -255,6 +249,44 @@ app.get('/api/mensajes', async (req, res) => {
   }
 });
 
+
+//Socket.io//
+
+const usuariosConectados = new Map();
+
+io.on('connection', (socket) => {
+  console.log('🟢 Un usuario se conectó');
+
+  // Permitir que un socket se una a una sala específica (para recibir mensajes de un chat)
+  socket.on('joinRoom', (chatId) => {
+    socket.join(chatId);
+    console.log(`Socket ${socket.id} se unió a la sala ${chatId}`);
+  });
+
+  // Registrar usuario conectado
+  socket.on('usuarioConectado', (nombreUsuario) => {
+    if (usuariosConectados.has(nombreUsuario)) {
+      const socketIdAnterior = usuariosConectados.get(nombreUsuario);
+      io.to(socketIdAnterior).emit('duplicado');
+      const anteriorSocket = io.sockets.sockets.get(socketIdAnterior);
+      if (anteriorSocket) anteriorSocket.disconnect();
+      console.log(`🔁 Usuario ${nombreUsuario} inició sesión en otro lugar. Cerrando la sesión anterior.`);
+    }
+    usuariosConectados.set(nombreUsuario, socket.id);
+    console.log(`✅ ${nombreUsuario} está conectado (${socket.id})`);
+  });
+
+  // Detectar desconexión y notificar
+  socket.on('disconnect', () => {
+    for (const [nombreUsuario, id] of usuariosConectados.entries()) {
+      if (id === socket.id) {
+        usuariosConectados.delete(nombreUsuario);
+        console.log(`🔴 ${nombreUsuario} se desconectó`);
+        break;
+      }
+    }
+  });
+});
 
 // Middleware catch-all
 app.use((req, res, next) => {
