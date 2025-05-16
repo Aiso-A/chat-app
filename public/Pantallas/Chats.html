@@ -25,8 +25,9 @@
     <p id="username" class="text-light mt-3 ms-3"></p>
   </nav>
 
-  <!-- Contenido de chats -->
-  <div class="container mt-4">
+ <!-- Contenedor principal centrado para la lista de chats -->
+  <div class="chat-list-container">
+    <!-- Chats Individuales -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h3>Chats Individuales</h3>
       <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevoChatModal">
@@ -35,6 +36,7 @@
     </div>
     <div id="chats-individuales" class="mb-4"></div>
 
+    <!-- Chats Grupales -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h3>Chats Grupales</h3>
       <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#nuevoGrupoModal">
@@ -75,7 +77,6 @@
         <div class="modal-body">
           <label for="nombreGrupo">Nombre del grupo:</label>
           <input id="nombreGrupo" type="text" class="form-control mb-3" placeholder="Ej. Proyecto Final" style="background-color: #222; color: white;">
-
           <label for="usuariosGrupo">Selecciona al menos 2 usuarios:</label>
           <select id="usuariosGrupo" class="form-select mt-2" multiple style="background-color: #222; color: white; height: 200px;"></select>
         </div>
@@ -87,7 +88,7 @@
     </div>
   </div>
 
-  <!-- Bootstrap JS -->
+  <!-- Bootstrap JS y Socket.io -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
 
@@ -96,7 +97,7 @@
     let usuarioActual = null;
     const socket = io();
 
-    // Obtener usuario actual una sola vez
+    // Obtener usuario actual
     fetch('/api/usuario-actual')
       .then(res => res.json())
       .then(data => {
@@ -105,7 +106,6 @@
           window.location.href = "LogIn.html";
           return;
         }
-
         usuarioActual = data;
         document.getElementById('username').textContent = data.nombreUsuario;
         socket.emit('usuarioConectado', data.nombreUsuario);
@@ -118,98 +118,94 @@
         window.location.href = "LogIn.html";
       });
 
-   // Cargar usuarios para modales
-function cargarUsuarios() {
-  fetch('/api/usuarios')
-    .then(res => res.json())
-    .then(usuarios => {
-      const selectInd = document.getElementById('usuariosSelect');
-      const selectGrupo = document.getElementById('usuariosGrupo');
-      selectInd.innerHTML = '';
-      selectGrupo.innerHTML = '';
+    // Actualización automática con Socket.io
+    socket.on('nuevoChat', () => cargarChats());
+    socket.on('chatActualizado', () => cargarChats());
+  
 
-      usuarios.forEach(u => {
-        if (u._id !== usuarioActual._id) {
-          //chat individual
-          let opt1 = document.createElement('option');
-          opt1.value = u._id;
-          opt1.textContent = u.nombreUsuario;
-          selectInd.appendChild(opt1);
+    // Cargar usuarios para los modales de chat individual y grupal
+    function cargarUsuarios() {
+      fetch('/api/usuarios')
+        .then(res => res.json())
+        .then(usuarios => {
+          const selectInd = document.getElementById('usuariosSelect');
+          const selectGrupo = document.getElementById('usuariosGrupo');
+          selectInd.innerHTML = '';
+          selectGrupo.innerHTML = '';
+          usuarios.forEach(u => {
+            if (u._id !== usuarioActual._id) {
+              // Opción para chat individual
+              let opt1 = document.createElement('option');
+              opt1.value = u._id;
+              opt1.textContent = u.nombreUsuario;
+              selectInd.appendChild(opt1);
+              // Opción para chat grupal
+              let opt2 = document.createElement('option');
+              opt2.value = u._id;
+              opt2.textContent = u.nombreUsuario;
+              selectGrupo.appendChild(opt2);
+            }
+          });
+        })
+        .catch(err => console.error('Error al cargar usuarios:', err));
+    }
 
-          //chat grupal
-          let opt2 = document.createElement('option');
-          opt2.value = u._id;
-          opt2.textContent = u.nombreUsuario;
-          selectGrupo.appendChild(opt2);
-        }
-      });
-    })
-    .catch(err => console.error('Error al cargar usuarios:', err));
-}
+    // Crear chat individual
+    function crearChatIndividual() {
+      const userId = document.getElementById('usuariosSelect').value;
+      fetch('/api/chats/individual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receptorId: userId })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const nuevoChatModal = bootstrap.Modal.getInstance(document.getElementById('nuevoChatModal'));
+        nuevoChatModal.hide();
+        window.location.href = `/Pantallas/Chat.html?id=${data.chatId}&tipo=individual`;
+      })
+      .catch(err => alert('Error al crear chat individual: ' + err));
+    }
 
-// Crear chat individual
-function crearChatIndividual() {
- const userId = document.getElementById('usuariosSelect').value;
-fetch('/api/chats/individual', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ receptorId: userId })
-})
+    // Crear grupo
+    function crearGrupo() {
+      const nombre = document.getElementById('nombreGrupo').value.trim();
+      const usuariosSelect = document.getElementById('usuariosGrupo');
+      let seleccionados = Array.from(usuariosSelect.selectedOptions).map(opt => opt.value);
+      if (nombre === '' || seleccionados.length < 2) {
+        alert("Debes escribir un nombre y seleccionar al menos 2 usuarios.");
+        return;
+      }
+      if (!seleccionados.includes(usuarioActual._id.toString())) {
+        seleccionados.push(usuarioActual._id.toString());
+      }
+      fetch('/api/chats/grupo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, usuarios: seleccionados })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const nuevoGrupoModal = bootstrap.Modal.getInstance(document.getElementById('nuevoGrupoModal'));
+        nuevoGrupoModal.hide();
+        document.getElementById('nombreGrupo').value = '';
+        usuariosSelect.selectedIndex = -1;
+        window.location.href = `/Pantallas/Chat.html?id=${data.chatId}&tipo=grupo`;
+      })
+      .catch(err => alert('Error al crear grupo: ' + err));
+    }
 
-    .then(res => res.json())
-    .then(data => {
-      const nuevoChatModal = bootstrap.Modal.getInstance(document.getElementById('nuevoChatModal'));
-      nuevoChatModal.hide();
-      
-      window.location.href = `/Pantallas/Chat.html?id=${data.chatId}&tipo=individual`;
-    })
-    .catch(err => alert('Error al crear chat individual: ' + err));
-}
-
-// Crear grupo
-function crearGrupo() {
-  const nombre = document.getElementById('nombreGrupo').value.trim();
-  const usuariosSelect = document.getElementById('usuariosGrupo');
-  let seleccionados = Array.from(usuariosSelect.selectedOptions).map(opt => opt.value);
-
-  if (nombre === '' || seleccionados.length < 2) {
-    alert("Debes escribir un nombre y seleccionar al menos 2 usuarios.");
-    return;
-  }
-
-  if (!seleccionados.includes(usuarioActual._id.toString())) {
-   seleccionados.push(usuarioActual._id.toString());
-  }
-
-  fetch('/api/chats/grupo', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nombre, usuarios: seleccionados })
-  })
-    .then(res => res.json())
-    .then(data => {
-      const nuevoGrupoModal = bootstrap.Modal.getInstance(document.getElementById('nuevoGrupoModal'));
-      nuevoGrupoModal.hide();
-      document.getElementById('nombreGrupo').value = '';
-      usuariosSelect.selectedIndex = -1;
-
-      window.location.href = `/Pantallas/Chat.html?id=${data.chatId}&tipo=grupo`;
-    })
-    .catch(err => alert('Error al crear grupo: ' + err));
-}
-
-    // Cargar chats
+    // Cargar la lista de chats y actualizarla en tiempo real
     function cargarChats() {
       fetch('/api/chats')
         .then(res => res.json())
         .then(data => {
           const individualesDiv = document.getElementById('chats-individuales');
           const grupalesDiv = document.getElementById('chats-grupales');
-
           individualesDiv.innerHTML = '';
           grupalesDiv.innerHTML = '';
 
-          // Mensaje si no hay chats individuales
+          // Lista de chats individuales: se mostrará la imagen y el nombre del otro usuario
           if (!data.individuales || data.individuales.length === 0) {
             individualesDiv.innerHTML = '<p class="text-muted fst-italic">No tienes chats individuales.</p>';
           } else {
@@ -218,12 +214,15 @@ function crearGrupo() {
               a.href = `Chat.html?id=${chat._id}&tipo=individual`;
               a.classList.add('chat-card');
               a.setAttribute('tabindex', '0');
-              a.textContent = chat.nombre || "Chat individual";
+              a.innerHTML = `
+                <img src="${chat.avatar || '/default-avatar.png'}" alt="${chat.nombre}" />
+                <span>${chat.nombre || "Chat individual"}</span>
+              `;
               individualesDiv.appendChild(a);
             });
           }
 
-          // Mensaje si no hay chats grupales
+          // Lista de chats grupales
           if (!data.grupales || data.grupales.length === 0) {
             grupalesDiv.innerHTML = '<p class="text-muted fst-italic">No tienes chats grupales.</p>';
           } else {
@@ -244,7 +243,10 @@ function crearGrupo() {
         });
     }
 
-    // Socket.io: escuchar cambios en chats y recargar
+
+
+    
+    // Escuchar cambios vía Socket.io
     socket.on('nuevoChat', () => cargarChats());
     socket.on('chatActualizado', () => cargarChats());
   </script>
