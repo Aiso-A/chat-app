@@ -161,19 +161,16 @@ app.post('/api/chats/individual', async (req, res) => {
   }
 });
 
-
 app.post('/api/chats/grupo', async (req, res) => {
   try {
     const { nombre, usuarios } = req.body;
     if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-    
     
     const usuarioActualId = req.session.usuario._id.toString();
     if (!usuarios.includes(usuarioActualId)) {
       usuarios.push(usuarioActualId);
     }
     
-
     if (!nombre || usuarios.length < 3) {
       return res.status(400).json({ error: 'Faltan datos o usuarios insuficientes' });
     }
@@ -192,6 +189,7 @@ app.post('/api/chats/grupo', async (req, res) => {
   }
 });
 
+
 //Información de los chats
 app.get('/api/chat-info', async (req, res) => {
   if (!req.session.usuario) {
@@ -199,14 +197,12 @@ app.get('/api/chat-info', async (req, res) => {
   }
   const { id, tipo } = req.query;
   try {
-   
     const chat = await Chat.findById(id).populate('usuarios', 'nombreUsuario avatar');
     if (!chat) {
       return res.status(404).json({ error: 'Chat no encontrado' });
     }
     
     if (tipo === 'individual') {
-     
       const otherUser = chat.usuarios.find(u => 
         u._id.toString() !== req.session.usuario._id.toString()
       );
@@ -223,6 +219,7 @@ app.get('/api/chat-info', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener info del chat' });
   }
 });
+
 
 //Historial de mensajes en el chat
 app.get('/api/mensajes', async (req, res) => {

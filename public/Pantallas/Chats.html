@@ -149,12 +149,13 @@ function cargarUsuarios() {
 
 // Crear chat individual
 function crearChatIndividual() {
-  const userId = document.getElementById('usuariosSelect').value;
-  fetch('/api/chats/individual', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ receptorId: userId })
-  })
+ const userId = document.getElementById('usuariosSelect').value;
+fetch('/api/chats/individual', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ receptorId: userId })
+})
+
     .then(res => res.json())
     .then(data => {
       const nuevoChatModal = bootstrap.Modal.getInstance(document.getElementById('nuevoChatModal'));
