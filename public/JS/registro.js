@@ -20,6 +20,8 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     });
 
     if (response.ok) {
+      // Guardar el correo en sessionStorage antes de redirigir
+      sessionStorage.setItem('correo', datos.email);
       window.location.href = '/Pantallas/Chats.html'; // Redirigir a la página de chats
     } else {
       alert('Error al registrar el usuario. Inténtalo nuevamente.');

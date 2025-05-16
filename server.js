@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 3000;
 const uri = process.env.MONGO_URI;
 
 // Conectar a MongoDB
-mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(uri)
   .then(() => console.log('✅ Conectado a MongoDB'))
   .catch((err) => console.error('❌ Error al conectar a MongoDB:', err));
 
@@ -40,12 +40,12 @@ app.use(session({
   }),
   cookie: {
     maxAge: 1000 * 60 * 60 * 24,
-    sameSite: 'none',
-    secure: true
+    sameSite: 'lax', // Cambié 'none' a 'lax' para mejorar compatibilidad
+    secure: false // Cambié 'true' a 'false' para permitir funcionamiento sin HTTPS
   }
 }));
 
-// Ruta para obtener lista de usuarios (con id y campos que necesitas)
+// Ruta para obtener lista de usuarios
 app.get('/api/usuarios', async (req, res) => {
   try {
     const usuarios = await Usuario.find({}, 'nombreUsuario email avatar _id');
@@ -83,7 +83,7 @@ app.post('/login', async (req, res) => {
     nombreUsuario: usuario.nombreUsuario
   };
 
-  res.redirect('/Pantallas/Chats.html');
+  res.redirect('/Pantallas/Chats.html'); //Si te dio error, quita Pantallas dejando solo /Chats.html
 });
 
 // Registro
@@ -133,6 +133,10 @@ io.on('connection', (socket) => {
   });
 });
 
+// Redirige al login si encuentra una página que no está en el proyecto
+app.use((req, res, next) => {
+  res.sendFile(path.join(__dirname, 'public', 'LogIn.html'));
+});
 
 // Iniciar servidor
 server.listen(PORT, () => {
