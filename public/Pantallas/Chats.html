@@ -93,11 +93,11 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- Script de lógica -->
-  <script>
+<script>
     let usuarioActual = null;
     const socket = io();
 
-    // Obtener usuario actual
+    // Se obtiene el usuario actual; si no existe, se redirige a login.
     fetch('/api/usuario-actual')
       .then(res => res.json())
       .then(data => {
@@ -111,19 +111,18 @@
         socket.emit('usuarioConectado', data.nombreUsuario);
 
         cargarUsuarios();
-        cargarChats();
+        cargarChats();  // Actualiza la lista de chats
       })
       .catch(err => {
         console.error('Error al obtener el usuario:', err);
         window.location.href = "LogIn.html";
       });
 
-    // Actualización automática con Socket.io
+    // Los cambios en la lista se actualizan escuchando eventos vía Socket.io:
     socket.on('nuevoChat', () => cargarChats());
     socket.on('chatActualizado', () => cargarChats());
-  
 
-    // Cargar usuarios para los modales de chat individual y grupal
+    // Cargar usuarios para los modales
     function cargarUsuarios() {
       fetch('/api/usuarios')
         .then(res => res.json())
@@ -162,6 +161,8 @@
       .then(data => {
         const nuevoChatModal = bootstrap.Modal.getInstance(document.getElementById('nuevoChatModal'));
         nuevoChatModal.hide();
+        // Emitir evento para actualizar la lista a todos:
+        socket.emit('nuevoChat');
         window.location.href = `/Pantallas/Chat.html?id=${data.chatId}&tipo=individual`;
       })
       .catch(err => alert('Error al crear chat individual: ' + err));
@@ -190,12 +191,13 @@
         nuevoGrupoModal.hide();
         document.getElementById('nombreGrupo').value = '';
         usuariosSelect.selectedIndex = -1;
+        socket.emit('nuevoChat');
         window.location.href = `/Pantallas/Chat.html?id=${data.chatId}&tipo=grupo`;
       })
       .catch(err => alert('Error al crear grupo: ' + err));
     }
 
-    // Cargar la lista de chats y actualizarla en tiempo real
+    // Función para cargar la lista de chats (dashboard)
     function cargarChats() {
       fetch('/api/chats')
         .then(res => res.json())
@@ -205,7 +207,7 @@
           individualesDiv.innerHTML = '';
           grupalesDiv.innerHTML = '';
 
-          // Lista de chats individuales: se mostrará la imagen y el nombre del otro usuario
+          // Lista de chats individuales
           if (!data.individuales || data.individuales.length === 0) {
             individualesDiv.innerHTML = '<p class="text-muted fst-italic">No tienes chats individuales.</p>';
           } else {
@@ -214,6 +216,9 @@
               a.href = `Chat.html?id=${chat._id}&tipo=individual`;
               a.classList.add('chat-card');
               a.setAttribute('tabindex', '0');
+              /* Se espera que el endpoint de /api/chats retorne, para cada chat individual,
+                 las propiedades 'nombre' y 'avatar' correspondientes al otro usuario.
+              */
               a.innerHTML = `
                 <img src="${chat.avatar || '/default-avatar.png'}" alt="${chat.nombre}" />
                 <span>${chat.nombre || "Chat individual"}</span>
@@ -242,13 +247,6 @@
           document.getElementById('chats-grupales').innerHTML = '<p class="text-danger">Error cargando chats grupales.</p>';
         });
     }
-
-
-
-    
-    // Escuchar cambios vía Socket.io
-    socket.on('nuevoChat', () => cargarChats());
-    socket.on('chatActualizado', () => cargarChats());
   </script>
 </body>
 </html>
