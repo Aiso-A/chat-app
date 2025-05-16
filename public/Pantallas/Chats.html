@@ -176,9 +176,9 @@ function crearGrupo() {
     return;
   }
 
-  if (!seleccionados.includes(usuarioActual._id)) {
-    seleccionados.push(usuarioActual._id);
-  }
+if (!seleccionados.includes(usuarioActual._id.toString())) {
+  seleccionados.push(usuarioActual._id.toString());
+}
 
   fetch('/api/chats/grupo', {
     method: 'POST',

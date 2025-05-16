@@ -142,18 +142,17 @@ app.get('/api/chats', async (req, res) => {
   }
 });
 
+
 app.post('/api/chats/individual', async (req, res) => {
   try {
-   
     const { receptorId } = req.body;
     if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
     
-    
     const nuevoChat = new Chat({
       tipo: 'individual',
-      usuarios: [req.session.usuario._id, receptorId],
-      
+      usuarios: [req.session.usuario._id, receptorId]
     });
+    
     await nuevoChat.save();
     res.json({ mensaje: 'Chat individual creado', chatId: nuevoChat._id });
   } catch (error) {
@@ -162,13 +161,20 @@ app.post('/api/chats/individual', async (req, res) => {
   }
 });
 
+
 app.post('/api/chats/grupo', async (req, res) => {
   try {
     const { nombre, usuarios } = req.body;
     if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
     
-    // Se espera que 'usuarios' contenga al menos 2 IDs, y ya agregaste el ID del usuario actual en el frontend.
-    if (!nombre || !Array.isArray(usuarios) || usuarios.length < 3) {
+    
+    const usuarioActualId = req.session.usuario._id.toString();
+    if (!usuarios.includes(usuarioActualId)) {
+      usuarios.push(usuarioActualId);
+    }
+    
+
+    if (!nombre || usuarios.length < 3) {
       return res.status(400).json({ error: 'Faltan datos o usuarios insuficientes' });
     }
     
@@ -177,6 +183,7 @@ app.post('/api/chats/grupo', async (req, res) => {
       nombre,
       usuarios,
     });
+    
     await nuevoGrupo.save();
     res.json({ mensaje: 'Grupo creado', chatId: nuevoGrupo._id });
   } catch (error) {
@@ -184,6 +191,7 @@ app.post('/api/chats/grupo', async (req, res) => {
     res.status(500).json({ error: 'Error al crear grupo' });
   }
 });
+
 
 
 // Usuarios conectados vía WebSocket
