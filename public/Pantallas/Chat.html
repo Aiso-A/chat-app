@@ -35,15 +35,17 @@
   <div class="chat-container">
     <div class="card">
       <div class="card-header d-flex align-items-center justify-content-between">
-        <div id="chat-header" class="d-flex align-items-center">
-       
-        </div>
+        <div id="chat-header" class="d-flex align-items-center"></div>
         <button class="btn btn-sm btn-outline-primary" id="back-btn">Volver</button>
       </div>
-      <div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;">
-       
-      </div>
+      
+      <!-- 📌 Elementos para videollamada 📌 -->
+      <div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;"></div>
       <div class="card-footer">
+        <video id="localVideo" autoplay muted style="width: 150px;"></video>
+        <video id="remoteVideo" autoplay style="width: 150px;"></video>
+        <button id="startCallBtn" class="btn btn-success" style="display: none;">Iniciar videollamada</button>
+        
         <form id="formularioMensaje" class="d-flex gap-2">
           <input type="text" id="mensaje" class="form-control" placeholder="Escribe tu mensaje..." required />
           <button type="submit" class="btn btn-primary">Enviar</button>
@@ -67,7 +69,7 @@
           return;
         }
         usuarioActual = data;
-        
+
         // Extraer parámetros y unirse a la sala
         const urlParams = new URLSearchParams(window.location.search);
         const chatId = urlParams.get('id');
@@ -84,7 +86,7 @@
         console.error('Error al obtener usuario actual:', err);
         window.location.href = '/LogIn.html';
       });
-    
+
     const mensajesDiv = document.getElementById('mensajes');
     const formulario = document.getElementById('formularioMensaje');
     const inputMensaje = document.getElementById('mensaje');
@@ -99,13 +101,15 @@
               <img src="${data.avatar || '/default-avatar.png'}" alt="${data.nombre}" style="width:40px;height:40px;border-radius:50%;margin-right:10px;">
               <h5 class="mb-0">${data.nombre}</h5>
             `;
+            document.getElementById("startCallBtn").style.display = "block";
           } else {
             chatHeader.innerHTML = `<h5 class="mb-0">${data.nombre}</h5>`;
+            document.getElementById("startCallBtn").style.display = "none";
           }
         })
         .catch(err => console.error('Error al cargar info del chat:', err));
     }
-    
+
     function loadMensajes(chatId) {
       fetch(`/api/mensajes?chatId=${chatId}`)
         .then(res => res.json())
@@ -150,11 +154,20 @@
       mensajesDiv.appendChild(div);
       mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
     });
-    
-   
-    document.getElementById('back-btn').addEventListener('click', () => {
-      window.location.href = "/Pantallas/Chats.html";
-    });
+
+    document.getElementById("startCallBtn").addEventListener("click", () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetId = urlParams.get("id"); // Obtener el ID del usuario con quien chateamos
+
+    if (targetId) {
+        window.location.href = `/Pantallas/Videollamada.html?id=${targetId}`;
+    }
+});
+
   </script>
+
+  <!-- 📌 Enlace a videollamadas.js 📌 -->
+  <script src="/videollamadas.js"></script>
+
 </body>
 </html>

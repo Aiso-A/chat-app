@@ -276,6 +276,19 @@ io.on('connection', (socket) => {
     console.log(`✅ ${nombreUsuario} está conectado (${socket.id})`);
   });
 
+  // 🔹 Manejo de señalización WebRTC 🔹
+  socket.on("offer", (data) => {
+    socket.to(data.target).emit("offer", data);
+  });
+
+  socket.on("answer", (data) => {
+    socket.to(data.target).emit("answer", data);
+  });
+
+  socket.on("ice-candidate", (data) => {
+    socket.to(data.target).emit("ice-candidate", data);
+  });
+
   // Detectar desconexión y notificar
   socket.on('disconnect', () => {
     for (const [nombreUsuario, id] of usuariosConectados.entries()) {
@@ -287,6 +300,7 @@ io.on('connection', (socket) => {
     }
   });
 });
+
 
 // Middleware catch-all
 app.use((req, res, next) => {
