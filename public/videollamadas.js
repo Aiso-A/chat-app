@@ -1,8 +1,10 @@
-const socket = io("https://servidorpoi.onrender.com");
+const socket = window.socket || io("https://servidorpoi.onrender.com");
 
 const peerConnection = new RTCPeerConnection({
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 });
+
+let activeTargetId; // Variable global para almacenar el target ID
 
 // 🔹 Capturar y enviar el flujo de video/audio 🔹
 navigator.mediaDevices.getUserMedia({ video: true, audio: true })
@@ -22,8 +24,8 @@ peerConnection.ontrack = (event) => {
 
 // 🔹 Enviar candidatos ICE para conectar correctamente 🔹
 peerConnection.onicecandidate = (event) => {
-  if (event.candidate) {
-    socket.emit("ice-candidate", { target: targetId, candidate: event.candidate });
+  if (event.candidate && activeTargetId) {
+    socket.emit("ice-candidate", { target: activeTargetId, candidate: event.candidate });
   }
 };
 
@@ -42,23 +44,23 @@ socket.on("answer", async (data) => {
 });
 
 socket.on("ice-candidate", async (data) => {
-    console.log("📡 Recibiendo candidato ICE");
-    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+  console.log("📡 Recibiendo candidato ICE");
+  await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
 });
 
 // 🔹 Iniciar una llamada 🔹
 async function startCall(targetId) {
-    // 🔹 Verificar que hay un usuario destino antes de iniciar la llamada
     if (!targetId) {
         console.error("❌ Error: targetId no definido.");
         return;
     }
 
-    // Redirigir al usuario a la pantalla de videollamadas
+    activeTargetId = targetId; // Guardamos el targetId globalmente
+
+        // Redirigir al usuario a la pantalla de videollamadas
     window.location.href = `/Pantallas/Videollamada.html?id=${targetId}`;
 
-    // Crear la oferta y enviarla
+
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
     socket.emit("offer", { sender: socket.id, target: targetId, offer });
-}
