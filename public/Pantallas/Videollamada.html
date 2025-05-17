@@ -57,13 +57,16 @@
         <script src="/videollamadas.js"></script>
     <script>
         // Extraer ID del usuario destino desde la URL
+      
         const urlParams = new URLSearchParams(window.location.search);
         const targetId = urlParams.get('id');
 
-        // Si hay un ID, iniciar la llamada automáticamente
-        if (targetId) {
-            startCall(targetId);
-        }
+        // 🔹 Evitar bucle infinito verificando si ya se está en una llamada
+        if (targetId && !sessionStorage.getItem("videollamadaIniciada")) {
+        sessionStorage.setItem("videollamadaIniciada", "true"); // Guardar estado de llamada
+        startCall(targetId);
+        }
+
     </script>
 
 </body>
