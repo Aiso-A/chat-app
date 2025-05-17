@@ -90,7 +90,7 @@ app.post('/login', async (req, res) => {
         nombreCompleto: usuario.nombreCompleto,
         email: usuario.email
       };
-      return res.redirect('/dashboard');
+      return res.redirect('/Pantallas/Dashboard.html');
     } else {
       return res.send('<script>alert("Credenciales inválidas"); window.location.href="/Pantallas/LogIn.html";</script>');
     }
