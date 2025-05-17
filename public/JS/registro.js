@@ -1,6 +1,5 @@
-// public/JS/registro.js
 document.getElementById('registerForm').addEventListener('submit', async function (e) {
-  e.preventDefault(); // Prevenir que el formulario se envíe de forma tradicional
+  e.preventDefault(); // Prevenir envío tradicional del formulario
 
   const formData = new FormData(this);
   const datos = {
@@ -19,10 +18,13 @@ document.getElementById('registerForm').addEventListener('submit', async functio
       body: JSON.stringify(datos),
     });
 
-    if (response.ok) {
-      window.location.href = '/Pantallas/Chats.html'; // Redirigir a la página de chats
+    const resultado = await response.json(); // Leer la respuesta JSON
+
+    if (resultado.exito) {
+      alert(resultado.mensaje); // Mostrar mensaje al usuario
+      window.location.href = '/Pantallas/Dashboard.html'; // Redirigir al dashboard
     } else {
-      alert('Error al registrar el usuario. Inténtalo nuevamente.');
+      alert(resultado.mensaje); // Mostrar mensaje de error
     }
   } catch (error) {
     console.error('Error:', error);

@@ -1,7 +1,6 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
-const fs = require('fs');
 const socketIO = require('socket.io');
 const mongoose = require('mongoose');
 const session = require('express-session');
@@ -25,18 +24,27 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('✅ Conectado a MongoDB'))
   .catch((err) => console.error('❌ Error al conectar a MongoDB:', err));
 
+app.set('trust proxy', 1);
+// Configuración del middleware de sesión
+const sessionMiddleware = session({
+  secret: 'secretoByteTalk',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: uri }),
+    cookie: { secure: process.env.NODE_ENV === 'production' }
+});
+app.use(sessionMiddleware);
+
+// Compartir la sesión con Socket.IO
+io.use((socket, next) => {
+  sessionMiddleware(socket.request, socket.request.res || {}, next);
+});
+
 // Middlewares
 app.use(express.static(path.join(__dirname, 'Pantallas')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
-app.use(session({
-  secret: 'secretoByteTalk',
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: uri })
-}));
 
 // Middleware para proteger rutas
 function requireLogin(req, res, next) {
@@ -46,9 +54,7 @@ function requireLogin(req, res, next) {
   next();
 }
 
-const mongoose = require('mongoose');
-const Usuario = require('./models/Usuario'); // Asegúrate de que este archivo existe
-
+//Endpoint para la base de datos 
 app.get('/verificar-bd', async (req, res) => {
   try {
     const usuarios = await Usuario.find({});
@@ -58,7 +64,7 @@ app.get('/verificar-bd', async (req, res) => {
       usuarios: usuarios.map(u => ({
         nombre: u.nombre,
         usuario: u.usuario,
-        correo: u.correo // 👈 Aquí añadimos el correo
+        correo: u.correo 
       }))
     });
   } catch (error) {
@@ -84,7 +90,7 @@ app.post('/login', async (req, res) => {
         nombreCompleto: usuario.nombreCompleto,
         email: usuario.email
       };
-      return res.redirect('/chats');
+      return res.redirect('/dashboard');
     } else {
       return res.send('<script>alert("Credenciales inválidas"); window.location.href="/Pantallas/LogIn.html";</script>');
     }
@@ -100,17 +106,22 @@ app.post('/registro', async (req, res) => {
   try {
     const usuarioExistente = await Usuario.findOne({ email });
     if (usuarioExistente) {
-      return res.send('<script>alert("Ya existe un usuario con ese correo"); window.location.href="/Pantallas/LogIn.html";</script>');
+      return res.status(400).json({ exito: false, mensaje: "Ya existe un usuario con ese correo." });
     }
 
     const nuevoUsuario = new Usuario({ nombreCompleto, nombreUsuario, email, password });
     await nuevoUsuario.save();
 
-    return res.send('<script>alert("Usuario registrado correctamente"); window.location.href="/Pantallas/LogIn.html";</script>');
+    return res.status(201).json({ exito: true, mensaje: "Usuario registrado correctamente." });
   } catch (err) {
     console.error('❌ Error al registrar usuario:', err);
-    return res.status(500).send('<script>alert("Hubo un error en el servidor."); window.location.href="/Pantallas/LogIn.html";</script>');
+    return res.status(500).json({ exito: false, mensaje: "Hubo un error en el servidor." });
   }
+});
+
+// Ruta para el dashboard, protegida por el middleware requireLogin
+app.get('/dashboard', requireLogin, (req, res) => {
+  res.send(`Bienvenido, ${req.session.usuario.nombreUsuario}`);
 });
 
 // Cerrar sesión
@@ -124,117 +135,26 @@ app.get('/logout', (req, res) => {
   });
 });
 
-// Página principal de chats
-app.get('/chats', requireLogin, async (req, res) => {
-  try {
-    const html = fs.readFileSync(path.join(__dirname, 'Pantallas', 'Chats.html'), 'utf8');
-    const htmlConUsuario = html.replace('{{usuario}}', req.session.usuario.nombreUsuario);
-    res.send(htmlConUsuario);
-  } catch (err) {
-    console.error('❌ Error al cargar Chats.html:', err);
-    res.status(500).send('Error interno');
-  }
-});
-
-// Obtener lista de usuarios
-app.get('/api/usuarios', requireLogin, async (req, res) => {
-  try {
-    const usuarios = await Usuario.find({ _id: { $ne: req.session.usuario.id } }, 'nombreUsuario nombreCompleto');
-    res.json(usuarios);
-  } catch (err) {
-    console.error('Error obteniendo usuarios:', err);
-    res.status(500).json({ error: 'Error interno' });
-  }
-});
-
-// Crear chat individual
-app.post('/api/chats/individual', requireLogin, async (req, res) => {
-  const userId = req.session.usuario.id;
-  const { receptorId } = req.body;
-
-  try {
-    const existente = await Chat.findOne({
-      tipo: 'individual',
-      participantes: { $all: [userId, receptorId], $size: 2 }
-    });
-
-    if (existente) return res.json({ chatId: existente._id });
-
-    const nuevoChat = new Chat({ tipo: 'individual', participantes: [userId, receptorId] });
-    await nuevoChat.save();
-    res.json({ chatId: nuevoChat._id });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error creando chat' });
-  }
-});
-
-// Crear chat grupal
-app.post('/api/chats/grupo', requireLogin, async (req, res) => {
-  const userId = req.session.usuario.id;
-  const { nombre, usuarios } = req.body;
-
-  try {
-    if (!nombre || !usuarios || usuarios.length < 2) {
-      return res.status(400).json({ error: 'Datos incompletos para crear grupo' });
-    }
-
-    const nuevoChat = new Chat({
-      tipo: 'grupo',
-      nombre,
-      participantes: [userId, ...usuarios]
-    });
-
-    await nuevoChat.save();
-    res.json({ chatId: nuevoChat._id });
-  } catch (err) {
-    console.error('Error creando chat grupal:', err);
-    res.status(500).json({ error: 'Error creando grupo' });
-  }
-});
-
-// Guardar mensaje
-app.post('/api/mensajes', requireLogin, async (req, res) => {
-  const userId = req.session.usuario.id;
-  const { chatId, texto } = req.body;
-
-  try {
-    const mensaje = new Mensaje({ chat: chatId, sender: userId, texto });
-    await mensaje.save();
-
-    await Chat.findByIdAndUpdate(chatId, { $push: { mensajes: mensaje._id } });
-
-    // Emitir mensaje a los sockets conectados
-    io.emit('mensajeRecibido', mensaje);
-
-    res.json(mensaje);
-  } catch (err) {
-    console.error('Error al guardar mensaje:', err);
-    res.status(500).json({ error: 'Error interno' });
-  }
-});
-
-// Obtener mensajes de un chat
-app.get('/api/mensajes/:chatId', requireLogin, async (req, res) => {
-  try {
-    const mensajes = await Mensaje.find({ chat: req.params.chatId }).populate('sender', 'nombreUsuario');
-    res.json(mensajes);
-  } catch (err) {
-    console.error('Error obteniendo mensajes:', err);
-    res.status(500).json({ error: 'Error interno' });
-  }
-});
 
 // WebSockets
 io.on('connection', (socket) => {
-  console.log('🟢 Un usuario se conectó');
+  const sessionData = socket.request.session;
+  if (sessionData && sessionData.usuario && sessionData.usuario.nombreUsuario) {
+    console.log(`🟢 ${sessionData.usuario.nombreUsuario} se conectó`);
+  } else {
+    console.log('🟢 Un usuario no autenticado se conectó');
+  }
 
   socket.on('mensajeNuevo', (mensaje) => {
     io.emit('mensajeRecibido', mensaje);
   });
 
   socket.on('disconnect', () => {
-    console.log('🔴 Un usuario se desconectó');
+    if (sessionData && sessionData.usuario && sessionData.usuario.nombreUsuario) {
+      console.log(`🔴 ${sessionData.usuario.nombreUsuario} se desconectó`);
+    } else {
+      console.log('🔴 Un usuario no autenticado se desconectó');
+    }
   });
 });
 
