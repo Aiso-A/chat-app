@@ -13,6 +13,22 @@ const Usuario = require('./models/Usuarios');
 const Chat = require('./models/Chat');
 const Mensaje = require('./models/Mensaje');
 
+// Crypto
+const CryptoJS = require("crypto-js");
+const secretKey = process.env.ENCRYPTION_KEY || 'default_secret_key';
+
+// Función para cifrar mensajes con crypto-js
+function encryptMessage(text) {
+  const ciphertext = CryptoJS.AES.encrypt(text, secretKey).toString();
+  return ciphertext;
+}
+
+// Función para descifrar mensajes
+function decryptMessage(ciphertext) {
+  const bytes = CryptoJS.AES.decrypt(ciphertext, secretKey);
+  return bytes.toString(CryptoJS.enc.Utf8);
+}
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
@@ -207,12 +223,12 @@ function decryptMessage(encryptedText) {
   return decrypted;
 }
 
-// Modificar el endpoint de envío de mensajes
+// Enviar mensaje en un chat
 app.post('/api/enviar-mensaje', async (req, res) => {
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-
-  const { chatId, texto, cifrado } = req.body; // `cifrado` es true o false según la preferencia del usuario
+  const { chatId, texto, cifrado } = req.body; 
   try {
+    // Si se solicita cifrado, encripta el mensaje; de lo contrario, lo deja en claro.
     const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
 
     const nuevoMensaje = new Mensaje({
@@ -225,19 +241,21 @@ app.post('/api/enviar-mensaje', async (req, res) => {
     await nuevoMensaje.save();
     const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
 
-    console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${mensajeTexto}`); // Mostramos el mensaje cifrado en el servidor
+    // Mostrar en consola el mensaje (cifrado) en el servidor.
+    console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${mensajeTexto}`);
 
+    // Emitir el mensaje a los clientes en la sala, descifrando si es necesario.
     io.to(chatId).emit('nuevoMensaje', {
       ...mensajeConInfo._doc,
-      texto: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto // Se envía descifrado al cliente
+      texto: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto
     });
-
     res.json(mensajeConInfo);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al enviar mensaje' });
   }
 });
+
 
 // Obtener información de un chat (para header)
 // Para chats individuales, devuelve datos del otro usuario; para grupales, el nombre del grupo.
