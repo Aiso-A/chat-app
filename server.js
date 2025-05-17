@@ -13,20 +13,19 @@ const Usuario = require('./models/Usuarios');
 const Chat = require('./models/Chat');
 const Mensaje = require('./models/Mensaje');
 
-// Crypto
-const CryptoJS = require("crypto-js");
+// <-- NUEVO: Importar simple-encryptor e inicializarlo
+const simpleEncryptor = require('simple-encryptor');
 const secretKey = process.env.ENCRYPTION_KEY || 'default_secret_key';
+const encryptor = simpleEncryptor(secretKey);
 
-// Función para cifrar mensajes con crypto-js
+// Función para cifrar mensajes
 function encryptMessage(text) {
-  const ciphertext = CryptoJS.AES.encrypt(text, secretKey).toString();
-  return ciphertext;
+  return encryptor.encrypt(text);
 }
 
 // Función para descifrar mensajes
 function decryptMessage(ciphertext) {
-  const bytes = CryptoJS.AES.decrypt(ciphertext, secretKey);
-  return bytes.toString(CryptoJS.enc.Utf8);
+  return encryptor.decrypt(ciphertext);
 }
 
 const app = express();
@@ -199,36 +198,12 @@ app.post('/api/chats/grupo', async (req, res) => {
   }
 });
 
-const crypto = require('crypto');
-const encryptionKey = process.env.ENCRYPTION_KEY || 'tu_clave_secreta_32_bytes'; // Debe ser de 32 bytes
-const ivLength = 16; // Tamaño del vector de inicialización
-
-// Función para cifrar mensajes
-function encryptMessage(text) {
-  const iv = crypto.randomBytes(ivLength);
-  const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(encryptionKey), iv);
-  let encrypted = cipher.update(text, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  return `${iv.toString('hex')}:${encrypted}`; // Guardamos IV junto con el mensaje cifrado
-}
-
-// Función para descifrar mensajes
-function decryptMessage(encryptedText) {
-  const textParts = encryptedText.split(':');
-  const iv = Buffer.from(textParts.shift(), 'hex');
-  const encryptedData = textParts.join(':');
-  const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(encryptionKey), iv);
-  let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
-}
-
 // Enviar mensaje en un chat
 app.post('/api/enviar-mensaje', async (req, res) => {
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-  const { chatId, texto, cifrado } = req.body;
+  const { chatId, texto, cifrado } = req.body; // Recibimos la bandera de cifrado desde el cliente
   try {
-    // Si se solicita cifrado, usamos la función de crypto-js
+    // Si se solicita cifrado, usa encryptMessage; de lo contrario, el mensaje en claro
     const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
 
     const nuevoMensaje = new Mensaje({
@@ -243,7 +218,7 @@ app.post('/api/enviar-mensaje', async (req, res) => {
 
     console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${mensajeTexto}`);
 
-    // Emitir mensaje, descifrándolo para que el cliente vea el texto plano
+    // Emitir mensaje: si fue cifrado, descifrarlo para mostrarlo en el cliente
     io.to(chatId).emit('nuevoMensaje', {
       ...mensajeConInfo._doc,
       texto: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto

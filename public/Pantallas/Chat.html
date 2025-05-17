@@ -139,21 +139,21 @@
 
     // Envío de mensajes con cifrado opcional
     document.getElementById('formularioMensaje').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const texto = document.getElementById('mensaje').value.trim();
-      if (!texto) return;
+  e.preventDefault();
+  const texto = document.getElementById('mensaje').value.trim();
+  if (!texto) return;
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const chatId = urlParams.get('id');
+  const urlParams = new URLSearchParams(window.location.search);
+  const chatId = urlParams.get('id');
 
-      await fetch('/api/enviar-mensaje', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatId, texto, cifrado: cifradoActivo }) // Agregamos cifrado
-      });
+  await fetch('/api/enviar-mensaje', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chatId, texto, cifrado: cifradoActivo })
+  });
 
-      document.getElementById('mensaje').value = '';
-    });
+  document.getElementById('mensaje').value = '';
+});
 
     socket.on('nuevoMensaje', (mensaje) => {
       console.log("🔔 Nuevo mensaje recibido:", mensaje);
