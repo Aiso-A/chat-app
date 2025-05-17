@@ -41,7 +41,7 @@
 <div class="card">
 <div class="card-header d-flex align-items-center justify-content-between">
 <div id="chat-header" class="d-flex align-items-center"></div>
-<button class="btn btn-sm btn-outline-primary" id="back-btn">Volver</button>
+<button id="toggleEncryption">🔒 Cifrado: Desactivado</button>
 </div>
 <div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;"></div>
 <div class="card-footer">
@@ -53,13 +53,13 @@
 </div>
 </div>
  
-  <!-- Socket.io -->
+<!-- Socket.io -->
 <script src="/socket.io/socket.io.js"></script>
 <script>
     let usuarioActual = null;
     const socket = io();
 
-    //
+    // Obtener usuario actual
     fetch('/api/usuario-actual')
       .then(res => res.json())
       .then(data => {
@@ -72,15 +72,13 @@
         document.getElementById('username').textContent = data.nombreUsuario;
         socket.emit('usuarioConectado', data.nombreUsuario);
 
-        iniciarChat(); // Se ejecuta SOLO después de cargar el usuario
-
+        iniciarChat();
       })
-
       .catch(err => {
         console.error("Error al obtener usuario:", err);
         window.location.href = '/LogIn.html';
       });
- 
+
     function iniciarChat() {
       const urlParams = new URLSearchParams(window.location.search);
       const chatId = urlParams.get('id');
@@ -89,133 +87,89 @@
       socket.emit('joinRoom', chatId);
       loadChatInfo(chatId, tipo);
       loadMensajes(chatId);
- 
-      // Verificar si usuarioActual sigue existiendo después de 3 segundos
 
       setTimeout(() => {
-
         console.log("Usuario después de 3 segundos:", usuarioActual);
-
         document.getElementById("username").textContent = usuarioActual.nombreUsuario || "Desconocido";
-
       }, 3000);
-
     }
- 
+
     function loadChatInfo(chatId, tipo) {
-
       fetch(`/api/chat-info?id=${chatId}&tipo=${tipo}`)
-
         .then(res => res.json())
-
         .then(data => {
-
           const chatHeader = document.getElementById('chat-header');
-
           if (tipo === 'individual') {
-
             chatHeader.innerHTML = `
 <img src="${data.avatar || '/default-avatar.png'}" alt="${data.nombre}" style="width:40px;height:40px;border-radius:50%;margin-right:10px;">
 <h5 class="mb-0">${data.nombre}</h5>
-
             `;
-
           } else {
-
             chatHeader.innerHTML = `<h5 class="mb-0">${data.nombre}</h5>`;
-
           }
-
         })
-
         .catch(err => console.error('Error al cargar info del chat:', err));
-
     }
- 
+
     function loadMensajes(chatId) {
-
       fetch(`/api/mensajes?chatId=${chatId}`)
-
         .then(res => res.json())
-
         .then(mensajes => {
-
           console.log("📩 Mensajes recibidos:", mensajes);
- 
           const mensajesDiv = document.getElementById('mensajes');
-
           mensajesDiv.innerHTML = '';
- 
           mensajes.forEach(m => {
-
             const div = document.createElement('div');
-
             div.className = 'mb-2';
-
             div.innerHTML = `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto}`;
-
             mensajesDiv.appendChild(div);
-
           });
- 
           mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
-
         })
-
         .catch(err => console.error('Error al cargar mensajes:', err));
-
     }
- 
+
+    // 🔒 Cifrado opcional
+    let cifradoActivo = false;
+
+    document.getElementById('toggleEncryption').addEventListener('click', () => {
+      cifradoActivo = !cifradoActivo;
+      document.getElementById('toggleEncryption').textContent = cifradoActivo ? "🔓 Cifrado: Activado" : "🔒 Cifrado: Desactivado";
+    });
+
+    // Envío de mensajes con cifrado opcional
     document.getElementById('formularioMensaje').addEventListener('submit', async (e) => {
-
       e.preventDefault();
-
       const texto = document.getElementById('mensaje').value.trim();
-
       if (!texto) return;
- 
+
       const urlParams = new URLSearchParams(window.location.search);
-
       const chatId = urlParams.get('id');
- 
+
       await fetch('/api/enviar-mensaje', {
-
         method: 'POST',
-
         headers: { 'Content-Type': 'application/json' },
-
-        body: JSON.stringify({ chatId, texto })
-
+        body: JSON.stringify({ chatId, texto, cifrado: cifradoActivo }) // Agregamos cifrado
       });
- 
+
       document.getElementById('mensaje').value = '';
-
     });
- 
+
     socket.on('nuevoMensaje', (mensaje) => {
-
       console.log("🔔 Nuevo mensaje recibido:", mensaje);
- 
       const mensajesDiv = document.getElementById('mensajes');
-
       const div = document.createElement('div');
-
       div.className = 'mb-2';
-
       div.innerHTML = `<strong>${mensaje.sender.nombreUsuario}:</strong> ${mensaje.texto}`;
-
       mensajesDiv.appendChild(div);
- 
       mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
-
     });
- 
+
     document.getElementById('back-btn').addEventListener('click', () => {
-
       window.location.href = "/Pantallas/Chats.html";
-
     });
 </script>
+
 </body>
 </html>
 
