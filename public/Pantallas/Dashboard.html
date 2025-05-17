@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ByteTalk - Chat</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Exo+2:wght@800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/Chats.css" />
+  <link rel="stylesheet" href="/Sidebar.css" />
+</head>
+<body>
+
+  <!-- Menú lateral -->
+  <nav class="sidebar">
+    <h2 class="app-title">ByteTalk</h2>
+    <p class="usuario-activo">👤 <span id="username"></span></p>
+    <ul>
+      <li><button id="btnNuevoChat">Nuevo chat</button></li>
+      <li><button id="btnNuevoGrupo">Nuevo grupo</button></li>
+      <li><a href="/Pantallas/Dashboard.html">Volver a chats</a></li>
+      <li><a href="/Pantallas/Perfil.html">Perfil</a></li>
+      <li><a href="/Pantallas/Admin.html">Tareas</a></li>
+      <li><a href="/Pantallas/LogIn.html">Cerrar sesión</a></li>
+    </ul>
+  </nav>
+
+  <!-- Contenido de chats -->
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3>Chats Individuales</h3>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevoChatModal">+ Nuevo chat</button>
+    </div>
+    <div id="chats-individuales" class="mb-4"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3>Chats Grupales</h3>
+      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#nuevoGrupoModal">+ Nuevo grupo</button>
+    </div>
+    <div id="chats-grupales"></div>
+  </div>
+
+  <!-- Modal Chat Individual -->
+  <div class="modal fade" id="nuevoChatModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content" style="background-color: #121212; color: white;">
+        <div class="modal-header">
+          <h5 class="modal-title">Crear nuevo chat individual</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label for="usuariosSelect">Selecciona un usuario:</label>
+          <select id="usuariosSelect" class="form-select mt-2" style="background-color: #222; color: white;"></select>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-success" onclick="crearChatIndividual()">Crear chat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Chat Grupal -->
+  <div class="modal fade" id="nuevoGrupoModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content" style="background-color: #121212; color: white;">
+        <div class="modal-header">
+          <h5 class="modal-title">Crear nuevo grupo</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label for="nombreGrupo">Nombre del grupo:</label>
+          <input id="nombreGrupo" type="text" class="form-control mb-3" placeholder="Ej. Proyecto Final" style="background-color: #222; color: white;">
+
+          <label for="usuariosGrupo">Selecciona al menos 2 usuarios:</label>
+          <select id="usuariosGrupo" class="form-select mt-2" multiple style="background-color: #222; color: white; height: 200px;"></select>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-success" onclick="crearGrupo()">Crear grupo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    //Obtener al usuario autentificado
+    fetch('/api/usuario') // Llamada al servidor para obtener el usuario
+    .then(response => response.json())
+    .then(data => {
+      if (data.exito) {
+        document.getElementById('username').textContent = data.nombreUsuario;
+      } else {
+        window.location.href = "/Pantallas/LogIn.html"; // Redirigir si no está autenticado
+      }
+    })
+    .catch(error => console.error("Error obteniendo usuario:", error));
+
+    //Cargar los chats
+      fetch('/api/chats')
+    .then(response => response.json())
+    .then(data => {
+      const individuales = document.getElementById('chats-individuales');
+      const grupales = document.getElementById('chats-grupales');
+
+      if (data.individuales.length === 0 && data.grupales.length === 0) {
+        individuales.innerHTML = "<p>¡Empieza un nuevo chat!</p>";
+        grupales.innerHTML = "<p>¡Empieza un nuevo chat!</p>";
+      } else {
+        data.individuales.forEach(chat => {
+          individuales.innerHTML += `<div class="chat"><img src="${chat.avatar}" /> <span>${chat.nombreUsuario}</span></div>`;
+        });
+        data.grupales.forEach(chat => {
+          grupales.innerHTML += `<div class="chat"><span>${chat.nombreGrupo}</span></div>`;
+        });
+      }
+    })
+    .catch(error => console.error("Error cargando chats:", error));
+
+    //Lista de usuarios para los modales
+     fetch('/api/usuarios')
+    .then(response => response.json())
+    .then(data => {
+      const selectIndividual = document.getElementById("usuariosSelect");
+      const selectGrupo = document.getElementById("usuariosGrupo");
+
+      data.usuarios.forEach(usuario => {
+        selectIndividual.innerHTML += `<option value="${usuario.id}">${usuario.nombreUsuario}</option>`;
+        selectGrupo.innerHTML += `<option value="${usuario.id}">${usuario.nombreUsuario}</option>`;
+      });
+    })
+    .catch(error => console.error("Error cargando usuarios:", error));
+
+    //Crear chat individual
+      function crearChatIndividual() {
+    const usuarioId = document.getElementById("usuariosSelect").value;
+    
+    fetch('/api/chats/crear', {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tipo: "individual", miembros: [usuarioId] })
+    }).then(response => response.json())
+      .then(data => {
+        if (data.exito) window.location.href = "/Pantallas/Chat.html";
+        else alert("Error al crear el chat.");
+      })
+      .catch(error => console.error("Error al crear chat:", error));
+  }
+
+  //Crear chat grupal
+  function crearGrupo() {
+    const nombreGrupo = document.getElementById("nombreGrupo").value;
+    const miembros = Array.from(document.getElementById("usuariosGrupo").selectedOptions).map(opt => opt.value);
+
+    if (miembros.length < 2) {
+      alert("Selecciona al menos 2 usuarios.");
+      return;
+    }
+
+    fetch('/api/chats/crear', {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tipo: "grupo", nombreGrupo, miembros })
+    }).then(response => response.json())
+      .then(data => {
+        if (data.exito) window.location.href = "/Pantallas/Chat.html";
+        else alert("Error al crear el grupo.");
+      })
+      .catch(error => console.error("Error al crear grupo:", error));
+  }
+
+  </script>
+
+</body>
+</html>

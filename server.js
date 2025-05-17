@@ -124,6 +124,47 @@ app.get('/dashboard', requireLogin, (req, res) => {
   res.send(`Bienvenido, ${req.session.usuario.nombreUsuario}`);
 });
 
+//Obtener al usuario que inició sesión
+app.get('/api/usuario', requireLogin, (req, res) => {
+  res.json({ exito: true, nombreUsuario: req.session.usuario.nombreUsuario });
+});
+
+//Obtener chats del usuario
+app.get('/api/chats', requireLogin, async (req, res) => {
+  const usuarioId = req.session.usuario.id;
+  try {
+    const individuales = await Chat.find({ tipo: "individual", miembros: usuarioId });
+    const grupales = await Chat.find({ tipo: "grupo", miembros: usuarioId });
+    res.json({ individuales, grupales });
+  } catch (error) {
+    console.error("Error obteniendo chats:", error);
+    res.status(500).json({ exito: false, mensaje: "Error al obtener los chats." });
+  }
+});
+
+//Obtener todos los usuarios excepto el que inició sesión
+app.get('/api/usuarios', requireLogin, async (req, res) => {
+  try {
+    const usuarios = await Usuario.find({ _id: { $ne: req.session.usuario.id } });
+    res.json({ usuarios });
+  } catch (error) {
+    console.error("Error obteniendo usuarios:", error);
+    res.status(500).json({ mensaje: "Error al obtener usuarios." });
+  }
+});
+
+//Crear chat
+app.post('/api/chats/crear', requireLogin, async (req, res) => {
+  try {
+    const nuevoChat = new Chat({ ...req.body, miembros: [req.session.usuario.id, ...req.body.miembros] });
+    await nuevoChat.save();
+    res.json({ exito: true });
+  } catch (error) {
+    console.error("Error creando chat:", error);
+    res.status(500).json({ exito: false, mensaje: "Hubo un error al crear el chat." });
+  }
+});
+
 // Cerrar sesión
 app.get('/logout', (req, res) => {
   req.session.destroy(err => {
@@ -139,24 +180,18 @@ app.get('/logout', (req, res) => {
 // WebSockets
 io.on('connection', (socket) => {
   const sessionData = socket.request.session;
-  if (sessionData && sessionData.usuario && sessionData.usuario.nombreUsuario) {
-    console.log(`🟢 ${sessionData.usuario.nombreUsuario} se conectó`);
-  } else {
+  if (!sessionData || !sessionData.usuario) {
     console.log('🟢 Un usuario no autenticado se conectó');
+    return;
   }
 
-  socket.on('mensajeNuevo', (mensaje) => {
-    io.emit('mensajeRecibido', mensaje);
-  });
-
+  console.log(`🟢 ${sessionData.usuario.nombreUsuario} se conectó`);
+  
   socket.on('disconnect', () => {
-    if (sessionData && sessionData.usuario && sessionData.usuario.nombreUsuario) {
-      console.log(`🔴 ${sessionData.usuario.nombreUsuario} se desconectó`);
-    } else {
-      console.log('🔴 Un usuario no autenticado se desconectó');
-    }
+    console.log(`🔴 ${sessionData.usuario.nombreUsuario} se desconectó`);
   });
 });
+
 
 // Iniciar servidor
 server.listen(PORT, () => {
