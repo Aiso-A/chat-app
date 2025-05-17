@@ -60,7 +60,6 @@ async function startCall(targetId) {
         // Redirigir al usuario a la pantalla de videollamadas
     window.location.href = `/Pantallas/Videollamada.html?id=${targetId}`;
 
-
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
-    socket.emit("offer", { sender: socket.id, target: targetId, offer });
+    socket.emit("offer", { sender: socket.id, target: targetId, offer });}

@@ -37,13 +37,15 @@ app.use(session({
   saveUninitialized: false,
   store: MongoStore.create({
     mongoUrl: process.env.MONGO_URI,
+    collectionName: 'sessions'
   }),
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24,
-    sameSite: 'lax',
-    secure: false,
-    path: '/' 
-  }
+    maxAge: 1000 * 60 * 60 * 24, // Un día de sesión
+    sameSite: 'strict', // Evitar pérdida de sesión en cambios de página
+    secure: process.env.NODE_ENV === 'production', // Activar solo en producción
+    httpOnly: true
+  },
+  proxy: true // 🔹 Importante si Render usa proxy inverso
 }));
 
 
@@ -68,6 +70,7 @@ app.get('/', (req, res) => {
 
 // Obtener usuario actual desde la sesión
 app.get('/api/usuario-actual', (req, res) => {
+  console.log("Estado completo de la sesión en usuario-actual:", req.session);
   if (!req.session.usuario) {
     return res.status(401).json({ error: 'No autenticado' });
   }
@@ -85,7 +88,8 @@ app.post('/login', async (req, res) => {
     _id: usuario._id,
     nombreUsuario: usuario.nombreUsuario
   };
-  res.redirect('/Pantallas/Chats.html'); 
+  console.log("Estado de la sesión después de login:", req.session);
+  res.redirect('/Pantallas/Chats.html');
 });
 
 // Registro
@@ -186,16 +190,17 @@ app.post('/api/chats/grupo', async (req, res) => {
 // Enviar mensaje en un chat
 app.post('/api/enviar-mensaje', async (req, res) => {
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
+
   const { chatId, texto } = req.body;
   try {
     const nuevoMensaje = new Mensaje({
       chat: chatId,
-      sender: req.session.usuario._id,
+      sender: req.session.usuario._id, // Asegurar que usa el usuario correcto
       texto
     });
     await nuevoMensaje.save();
     const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
-    // Emitir el mensaje a todos los sockets que estén en la sala (es decir, en ese chat)
+
     io.to(chatId).emit('nuevoMensaje', mensajeConInfo);
     res.json(mensajeConInfo);
   } catch (error) {
@@ -276,19 +281,6 @@ io.on('connection', (socket) => {
     console.log(`✅ ${nombreUsuario} está conectado (${socket.id})`);
   });
 
-  // 🔹 Manejo de señalización WebRTC 🔹
-  socket.on("offer", (data) => {
-    socket.to(data.target).emit("offer", data);
-  });
-
-  socket.on("answer", (data) => {
-    socket.to(data.target).emit("answer", data);
-  });
-
-  socket.on("ice-candidate", (data) => {
-    socket.to(data.target).emit("ice-candidate", data);
-  });
-
   // Detectar desconexión y notificar
   socket.on('disconnect', () => {
     for (const [nombreUsuario, id] of usuariosConectados.entries()) {
@@ -300,7 +292,6 @@ io.on('connection', (socket) => {
     }
   });
 });
-
 
 // Middleware catch-all
 app.use((req, res, next) => {
