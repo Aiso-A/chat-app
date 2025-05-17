@@ -226,9 +226,9 @@ function decryptMessage(encryptedText) {
 // Enviar mensaje en un chat
 app.post('/api/enviar-mensaje', async (req, res) => {
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-  const { chatId, texto, cifrado } = req.body; 
+  const { chatId, texto, cifrado } = req.body;
   try {
-    // Si se solicita cifrado, encripta el mensaje; de lo contrario, lo deja en claro.
+    // Si se solicita cifrado, usamos la función de crypto-js
     const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
 
     const nuevoMensaje = new Mensaje({
@@ -241,10 +241,9 @@ app.post('/api/enviar-mensaje', async (req, res) => {
     await nuevoMensaje.save();
     const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
 
-    // Mostrar en consola el mensaje (cifrado) en el servidor.
     console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${mensajeTexto}`);
 
-    // Emitir el mensaje a los clientes en la sala, descifrando si es necesario.
+    // Emitir mensaje, descifrándolo para que el cliente vea el texto plano
     io.to(chatId).emit('nuevoMensaje', {
       ...mensajeConInfo._doc,
       texto: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto
