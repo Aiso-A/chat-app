@@ -33,19 +33,20 @@ app.use(cookieParser());
 
 app.use(session({
   secret: process.env.SESSION_SECRET,
-  resave: false,
+  resave: true, //Forzar el guardado de sesión
   saveUninitialized: false,
   store: MongoStore.create({
     mongoUrl: process.env.MONGO_URI,
-    collectionName: 'sessions'
+    collectionName: 'sessions',
+    autoRemove: 'disabled' //Evitar que Mongo elimine sesiones automáticamente
   }),
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24, // Un día de sesión
-    sameSite: 'strict', // Evitar pérdida de sesión en cambios de página
-    secure: process.env.NODE_ENV === 'production', // Activar solo en producción
+    maxAge: 1000 * 60 * 60 * 24, //Mantener sesión por un día
+    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true
   },
-  proxy: true // 🔹 Importante si Render usa proxy inverso
+  proxy: true //Si Render usa proxy
 }));
 
 
