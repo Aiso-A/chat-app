@@ -276,16 +276,44 @@ io.on('connection', (socket) => {
     console.log(`✅ ${nombreUsuario} está conectado (${socket.id})`);
   });
 
-  // Detectar desconexión y notificar
-  socket.on('disconnect', () => {
-    for (const [nombreUsuario, id] of usuariosConectados.entries()) {
-      if (id === socket.id) {
-        usuariosConectados.delete(nombreUsuario);
-        console.log(`🔴 ${nombreUsuario} se desconectó`);
-        break;
-      }
+   socket.on('usuarioConectado', (nombreUsuario) => {
+    if (usuariosConectados.has(nombreUsuario)) {
+      const socketIdAnterior = usuariosConectados.get(nombreUsuario);
+      io.to(socketIdAnterior).emit('duplicado');
+      const anteriorSocket = io.sockets.sockets.get(socketIdAnterior);
+      if (anteriorSocket) anteriorSocket.disconnect();
+      console.log(`🔁 Usuario ${nombreUsuario} inició sesión en otro lugar. Cerrando la sesión anterior.`);
     }
+    usuariosConectados.set(nombreUsuario, socket.id);
+    console.log(`✅ ${nombreUsuario} está conectado (${socket.id})`);
   });
+
+  // Detectar desconexión y notificar
+
+  socket.on('disconnect', async () => {
+  let usuarioDesconectado = null;
+ 
+  for (const [nombreUsuario, id] of usuariosConectados.entries()) {
+    if (id === socket.id) {
+      usuarioDesconectado = nombreUsuario;
+      usuariosConectados.delete(nombreUsuario);
+      break;
+    }
+  }
+ 
+  if (usuarioDesconectado) {
+    console.log(`🔴 ${usuarioDesconectado} se ha desconectado. Verificando actividad...`);
+   
+    // Esperar un momento y comprobar si el usuario sigue activo
+    setTimeout(() => {
+      if (!usuariosConectados.has(usuarioDesconectado)) {
+        console.log(`⚠️ Confirmado: ${usuarioDesconectado} está realmente desconectado.`);
+      } else {
+        console.log(`✅ ${usuarioDesconectado} aún está activo.`);
+      }
+    }, 5000); // Esperar 5 segundos antes de confirmar desconexión
+  }
+});
 });
 
 // Middleware catch-all
