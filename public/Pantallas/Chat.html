@@ -1,160 +1,259 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ByteTalk - Conversación</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Exo+2:wght@800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/Chats.css" />
-  <link rel="stylesheet" href="/Sidebar.css" />
-  <style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ByteTalk - Conversación</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Exo+2:wght@800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/Chats.css" />
+<link rel="stylesheet" href="/Sidebar.css" />
+<style>
+
     .chat-container {
+
       max-width: 800px;
+
       margin: 2rem auto; 
+
       padding: 0 1rem;
+
     }
-  </style>
+</style>
 </head>
 <body>
-
+ 
   <!-- Sidebar -->
-  <nav class="sidebar">
-    <h2 class="app-title">ByteTalk</h2>
-    <ul>
-      <li><a href="/Pantallas/Chats.html">Volver a chats</a></li>
-      <li><a href="/Pantallas/Perfil.html">Perfil</a></li>
-      <li><a href="/Pantallas/Admin.html">Tareas</a></li>
-      <li><a href="/LogIn.html">Cerrar sesión</a></li>
-    </ul>
-    <p id="username" class="text-light mt-3 ms-3"></p>
-  </nav>
-
+<nav class="sidebar">
+<h2 class="app-title">ByteTalk</h2>
+<ul>
+<li><a href="/Pantallas/Chats.html">Volver a chats</a></li>
+<li><a href="/Pantallas/Perfil.html">Perfil</a></li>
+<li><a href="/Pantallas/Admin.html">Tareas</a></li>
+<li><a href="/LogIn.html">Cerrar sesión</a></li>
+</ul>
+<p id="username" class="text-light mt-3 ms-3"></p>
+</nav>
+ 
   <!-- Contenedor del chat centrado -->
-  <div class="chat-container">
-    <div class="card">
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <div id="chat-header" class="d-flex align-items-center">
-       
-        </div>
-        <button class="btn btn-sm btn-outline-primary" id="back-btn">Volver</button>
-      </div>
-      <div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;">
-       
-      </div>
-      <div class="card-footer">
-        <form id="formularioMensaje" class="d-flex gap-2">
-          <input type="text" id="mensaje" class="form-control" placeholder="Escribe tu mensaje..." required />
-          <button type="submit" class="btn btn-primary">Enviar</button>
-        </form>
-      </div>
-    </div>
-  </div>
-
+<div class="chat-container">
+<div class="card">
+<div class="card-header d-flex align-items-center justify-content-between">
+<div id="chat-header" class="d-flex align-items-center"></div>
+<button class="btn btn-sm btn-outline-primary" id="back-btn">Volver</button>
+</div>
+<div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;"></div>
+<div class="card-footer">
+<form id="formularioMensaje" class="d-flex gap-2">
+<input type="text" id="mensaje" class="form-control" placeholder="Escribe tu mensaje..." required />
+<button type="submit" class="btn btn-primary">Enviar</button>
+</form>
+</div>
+</div>
+</div>
+ 
   <!-- Socket.io -->
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+
     const socket = io();
+
     let usuarioActual = null;
-    
+ 
+    // Debugging para detectar cambios en usuarioActual
+
+    Object.defineProperty(window, "usuarioActual", {
+
+      set: function(value) {
+
+        console.log("⚠️ usuarioActual ha cambiado:", value);
+
+      }
+
+    });
+ 
     // Verificar la sesión del usuario
+
     fetch('/api/usuario-actual')
+
       .then(res => res.json())
+
       .then(data => {
+
+        console.log("🔍 Usuario recibido:", data);
+ 
         if (!data || !data._id) {
+
+          console.warn("⚠️ Usuario no encontrado, redirigiendo...");
+
           window.location.href = '/LogIn.html';
+
           return;
+
         }
+ 
         usuarioActual = data;
-        
-        // Extraer parámetros y unirse a la sala
-        const urlParams = new URLSearchParams(window.location.search);
-        const chatId = urlParams.get('id');
-        const tipo = urlParams.get('tipo'); 
-        
-        
-        socket.emit('joinRoom', chatId);
-        
-       
-        loadChatInfo(chatId, tipo);
-        loadMensajes(chatId);
+
+        sessionStorage.setItem("usuarioActual", JSON.stringify(usuarioActual));
+ 
+        console.log("✅ Usuario asignado:", usuarioActual);
+
+        iniciarChat(); // Se ejecuta SOLO después de cargar el usuario
+
       })
+
       .catch(err => {
-        console.error('Error al obtener usuario actual:', err);
+
+        console.error("Error al obtener usuario:", err);
+
         window.location.href = '/LogIn.html';
+
       });
-    
-    const mensajesDiv = document.getElementById('mensajes');
-    const formulario = document.getElementById('formularioMensaje');
-    const inputMensaje = document.getElementById('mensaje');
-    
-    function loadChatInfo(chatId, tipo) {
-      fetch(`/api/chat-info?id=${chatId}&tipo=${tipo}`)
-        .then(res => res.json())
-        .then(data => {
-          const chatHeader = document.getElementById('chat-header');
-          if (tipo === 'individual') {
-            chatHeader.innerHTML = `
-              <img src="${data.avatar || '/default-avatar.png'}" alt="${data.nombre}" style="width:40px;height:40px;border-radius:50%;margin-right:10px;">
-              <h5 class="mb-0">${data.nombre}</h5>
-            `;
-          } else {
-            chatHeader.innerHTML = `<h5 class="mb-0">${data.nombre}</h5>`;
-          }
-        })
-        .catch(err => console.error('Error al cargar info del chat:', err));
-    }
-    
-    function loadMensajes(chatId) {
-      fetch(`/api/mensajes?chatId=${chatId}`)
-        .then(res => res.json())
-        .then(mensajes => {
-          mensajesDiv.innerHTML = '';
-          mensajes.forEach(m => {
-            const div = document.createElement('div');
-            div.className = 'mb-2';
-            div.innerHTML = `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto}`;
-            mensajesDiv.appendChild(div);
-          });
-          mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
-        })
-        .catch(err => console.error('Error al cargar mensajes:', err));
-    }
-    
-    // Enviar mensaje
-    formulario.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const texto = inputMensaje.value.trim();
-      if (!texto) return;
-      
+ 
+    function iniciarChat() {
+
       const urlParams = new URLSearchParams(window.location.search);
+
       const chatId = urlParams.get('id');
-      
-      
+
+      const tipo = urlParams.get('tipo');
+ 
+      console.log("🔍 Parámetros de URL:", Object.fromEntries(urlParams));
+ 
+      socket.emit('joinRoom', chatId);
+ 
+      loadChatInfo(chatId, tipo);
+
+      loadMensajes(chatId);
+ 
+      // Verificar si usuarioActual sigue existiendo después de 3 segundos
+
+      setTimeout(() => {
+
+        console.log("Usuario después de 3 segundos:", usuarioActual);
+
+        document.getElementById("username").textContent = usuarioActual.nombreUsuario || "Desconocido";
+
+      }, 3000);
+
+    }
+ 
+    function loadChatInfo(chatId, tipo) {
+
+      fetch(`/api/chat-info?id=${chatId}&tipo=${tipo}`)
+
+        .then(res => res.json())
+
+        .then(data => {
+
+          const chatHeader = document.getElementById('chat-header');
+
+          if (tipo === 'individual') {
+
+            chatHeader.innerHTML = `
+<img src="${data.avatar || '/default-avatar.png'}" alt="${data.nombre}" style="width:40px;height:40px;border-radius:50%;margin-right:10px;">
+<h5 class="mb-0">${data.nombre}</h5>
+
+            `;
+
+          } else {
+
+            chatHeader.innerHTML = `<h5 class="mb-0">${data.nombre}</h5>`;
+
+          }
+
+        })
+
+        .catch(err => console.error('Error al cargar info del chat:', err));
+
+    }
+ 
+    function loadMensajes(chatId) {
+
+      fetch(`/api/mensajes?chatId=${chatId}`)
+
+        .then(res => res.json())
+
+        .then(mensajes => {
+
+          console.log("📩 Mensajes recibidos:", mensajes);
+ 
+          const mensajesDiv = document.getElementById('mensajes');
+
+          mensajesDiv.innerHTML = '';
+ 
+          mensajes.forEach(m => {
+
+            const div = document.createElement('div');
+
+            div.className = 'mb-2';
+
+            div.innerHTML = `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto}`;
+
+            mensajesDiv.appendChild(div);
+
+          });
+ 
+          mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
+
+        })
+
+        .catch(err => console.error('Error al cargar mensajes:', err));
+
+    }
+ 
+    document.getElementById('formularioMensaje').addEventListener('submit', async (e) => {
+
+      e.preventDefault();
+
+      const texto = document.getElementById('mensaje').value.trim();
+
+      if (!texto) return;
+ 
+      const urlParams = new URLSearchParams(window.location.search);
+
+      const chatId = urlParams.get('id');
+ 
       await fetch('/api/enviar-mensaje', {
+
         method: 'POST',
-        headers: { 'Content-Type': 'application/json'},
+
+        headers: { 'Content-Type': 'application/json' },
+
         body: JSON.stringify({ chatId, texto })
+
       });
-      
-      inputMensaje.value = '';
-     
+ 
+      document.getElementById('mensaje').value = '';
+
     });
-    
-    
+ 
     socket.on('nuevoMensaje', (mensaje) => {
+
+      console.log("🔔 Nuevo mensaje recibido:", mensaje);
+ 
+      const mensajesDiv = document.getElementById('mensajes');
+
       const div = document.createElement('div');
+
       div.className = 'mb-2';
+
       div.innerHTML = `<strong>${mensaje.sender.nombreUsuario}:</strong> ${mensaje.texto}`;
+
       mensajesDiv.appendChild(div);
+ 
       mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
+
     });
-    
-   
+ 
     document.getElementById('back-btn').addEventListener('click', () => {
+
       window.location.href = "/Pantallas/Chats.html";
+
     });
-  </script>
+</script>
 </body>
 </html>
+
+ 
