@@ -195,8 +195,14 @@ app.post('/api/enviar-mensaje', async (req, res) => {
     });
     await nuevoMensaje.save();
     const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
+
+    // Formatear mensaje para el servidor
+    const mensajeServidor = `${mensajeConInfo.sender.nombreUsuario}: ${mensajeConInfo.texto}`;
+    console.log(mensajeServidor); // Ahora el mensaje se verá reflejado en los logs del servidor
+
     // Emitir el mensaje a todos los sockets que estén en la sala (es decir, en ese chat)
     io.to(chatId).emit('nuevoMensaje', mensajeConInfo);
+    
     res.json(mensajeConInfo);
   } catch (error) {
     console.error(error);
