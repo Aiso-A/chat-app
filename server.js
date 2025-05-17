@@ -249,72 +249,63 @@ app.get('/api/mensajes', async (req, res) => {
   }
 });
 
-
 //Socket.io//
-
+ 
 const usuariosConectados = new Map();
-
+ 
 io.on('connection', (socket) => {
   console.log('🟢 Un usuario se conectó');
-
+ 
   // Permitir que un socket se una a una sala específica (para recibir mensajes de un chat)
   socket.on('joinRoom', (chatId) => {
     socket.join(chatId);
     console.log(`Socket ${socket.id} se unió a la sala ${chatId}`);
   });
-
-  // Registrar usuario conectado
+ 
+  // Registrar usuario conectado con verificación para evitar desconexión innecesaria
   socket.on('usuarioConectado', (nombreUsuario) => {
+    console.log(`🟢 Intentando conectar a ${nombreUsuario}...`);
+ 
     if (usuariosConectados.has(nombreUsuario)) {
       const socketIdAnterior = usuariosConectados.get(nombreUsuario);
-      io.to(socketIdAnterior).emit('duplicado');
-      const anteriorSocket = io.sockets.sockets.get(socketIdAnterior);
-      if (anteriorSocket) anteriorSocket.disconnect();
-      console.log(`🔁 Usuario ${nombreUsuario} inició sesión en otro lugar. Cerrando la sesión anterior.`);
+ 
+      // Verificar si el socket anterior aún está activo antes de cerrarlo
+      if (io.sockets.sockets.get(socketIdAnterior)) {
+        io.to(socketIdAnterior).emit('duplicado');
+        io.sockets.sockets.get(socketIdAnterior).disconnect();
+        console.log(`🔁 Usuario ${nombreUsuario} inició sesión en otro lugar. Cerrando la sesión anterior.`);
+      }
     }
+ 
     usuariosConectados.set(nombreUsuario, socket.id);
     console.log(`✅ ${nombreUsuario} está conectado (${socket.id})`);
   });
-
-   socket.on('usuarioConectado', (nombreUsuario) => {
-    if (usuariosConectados.has(nombreUsuario)) {
-      const socketIdAnterior = usuariosConectados.get(nombreUsuario);
-      io.to(socketIdAnterior).emit('duplicado');
-      const anteriorSocket = io.sockets.sockets.get(socketIdAnterior);
-      if (anteriorSocket) anteriorSocket.disconnect();
-      console.log(`🔁 Usuario ${nombreUsuario} inició sesión en otro lugar. Cerrando la sesión anterior.`);
-    }
-    usuariosConectados.set(nombreUsuario, socket.id);
-    console.log(`✅ ${nombreUsuario} está conectado (${socket.id})`);
-  });
-
-  // Detectar desconexión y notificar
-
-  socket.on('disconnect', async () => {
-  let usuarioDesconectado = null;
  
-  for (const [nombreUsuario, id] of usuariosConectados.entries()) {
-    if (id === socket.id) {
-      usuarioDesconectado = nombreUsuario;
-      usuariosConectados.delete(nombreUsuario);
-      break;
-    }
-  }
- 
-  if (usuarioDesconectado) {
-    console.log(`🔴 ${usuarioDesconectado} se ha desconectado. Verificando actividad...`);
-   
-    // Esperar un momento y comprobar si el usuario sigue activo
+  // Detectar desconexión y verificar antes de eliminar al usuario
+  socket.on('disconnect', () => {
     setTimeout(() => {
-      if (!usuariosConectados.has(usuarioDesconectado)) {
-        console.log(`⚠️ Confirmado: ${usuarioDesconectado} está realmente desconectado.`);
-      } else {
-        console.log(`✅ ${usuarioDesconectado} aún está activo.`);
+      for (const [nombreUsuario, id] of usuariosConectados.entries()) {
+        if (id === socket.id) {
+          // Esperar para verificar si el usuario realmente se ha desconectado
+          if (!usuariosConectados.has(nombreUsuario)) {
+            usuariosConectados.delete(nombreUsuario);
+            console.log(`🔴 Confirmado: ${nombreUsuario} se desconectó completamente.`);
+          } else {
+            console.log(`✅ Usuario aún activo, no se eliminará.`);
+          }
+          break;
+        }
       }
     }, 5000); // Esperar 5 segundos antes de confirmar desconexión
-  }
+  });
+ 
+  // Mantener la conexión activa para evitar que el servidor cierre la sesión por inactividad
+  socket.on('mantenerConexion', (nombreUsuario) => {
+    console.log(`💡 Refrescando conexión con: ${nombreUsuario}`);
+    usuariosConectados.set(nombreUsuario, socket.id); // Refrescar conexión activa
+  });
 });
-});
+ 
 
 // Middleware catch-all
 app.use((req, res, next) => {
