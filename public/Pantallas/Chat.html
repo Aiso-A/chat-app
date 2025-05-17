@@ -47,90 +47,17 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
+    const socket = io({
+    withCredentials: true // ✅ Permite que las cookies de sesión se envíen
+  });
 
-    // Parámetros de la URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const chatId = urlParams.get('id');
-    const tipo = urlParams.get('tipo');
+  socket.on('connect', () => {
+    console.log("🟢 Conectado a WebSocket con sesión");
+  });
 
-    // Validar parámetros
-    if (!chatId || !tipo) {
-      alert("Faltan datos del chat. Serás redirigido.");
-      window.location.href = "/Pantallas/Chats.html";
-    }
-
-    // Mostrar nombre de usuario (desde localStorage)
-    const username = localStorage.getItem("usuario");
-    if (username) {
-      document.getElementById("username").textContent = username;
-    }
-
-    const mensajesDiv = document.getElementById('mensajes');
-    const formulario = document.getElementById('formularioMensaje');
-    const inputMensaje = document.getElementById('mensaje');
-    const chatTitle = document.getElementById('chat-title');
-
-    // Obtener nombre del chat
-    fetch(`/api/chat-info?id=${chatId}&tipo=${tipo}`)
-      .then(res => {
-        if (!res.ok) throw new Error("No se pudo obtener la información del chat");
-        return res.json();
-      })
-      .then(data => {
-        chatTitle.textContent = data.nombre;
-      })
-      .catch(err => {
-        console.error(err);
-        chatTitle.textContent = "Chat no encontrado";
-      });
-
-    // Obtener mensajes anteriores
-    fetch(`/api/mensajes?chatId=${chatId}`)
-      .then(res => res.json())
-      .then(mensajes => {
-        mensajes.forEach(m => {
-          const div = document.createElement('div');
-          const esPropio = m.sender.nombreUsuario === username;
-          div.className = `mb-2 ${esPropio ? 'mensaje-propio' : 'mensaje-ajeno'}`;
-          div.innerHTML = `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto}`;
-          mensajesDiv.appendChild(div);
-        });
-        mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
-      });
-
-    // Enviar mensaje
-    formulario.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const texto = inputMensaje.value.trim();
-      if (!texto) return;
-
-      const res = await fetch('/api/enviar-mensaje', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ chatId, texto })
-      });
-
-      if (!res.ok) {
-        alert("Error al enviar el mensaje");
-        return;
-      }
-
-      const nuevoMensaje = await res.json();
-      const div = document.createElement('div');
-      const esPropio = nuevoMensaje.sender.nombreUsuario === username;
-      div.className = `mb-2 ${esPropio ? 'mensaje-propio' : 'mensaje-ajeno'}`;
-      div.innerHTML = `<strong>${nuevoMensaje.sender.nombreUsuario}:</strong> ${nuevoMensaje.texto}`;
-      mensajesDiv.appendChild(div);
-
-      inputMensaje.value = '';
-      mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
-    });
-
-    // Botón volver
-    document.getElementById('back-btn').addEventListener('click', () => {
-      window.location.href = "/Pantallas/Chats.html";
-    });
+  socket.on('disconnect', () => {
+    console.log("🔴 Usuario desconectado de WebSocket");
+  });
   </script>
 </body>
 </html>

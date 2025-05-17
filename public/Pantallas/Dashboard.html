@@ -88,6 +88,19 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
+    const socket = io(window.location.origin, {
+  withCredentials: true,
+  transports: ["websocket"]
+});
+
+  socket.on('connect', () => {
+    console.log("🟢 Conectado a WebSocket con sesión");
+  });
+
+  socket.on('disconnect', () => {
+    console.log("🔴 Usuario desconectado de WebSocket");
+  });
+
     //Obtener al usuario autentificado
     fetch('/api/usuario') // Llamada al servidor para obtener el usuario
     .then(response => response.json())
@@ -135,22 +148,25 @@
     })
     .catch(error => console.error("Error cargando usuarios:", error));
 
-    //Crear chat individual
-      function crearChatIndividual() {
-    const usuarioId = document.getElementById("usuariosSelect").value;
-    
-    fetch('/api/chats/crear', {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tipo: "individual", miembros: [usuarioId] })
-    }).then(response => response.json())
-      .then(data => {
-        if (data.exito) window.location.href = "/Pantallas/Chat.html";
-        else alert("Error al crear el chat.");
-      })
-      .catch(error => console.error("Error al crear chat:", error));
+ function crearChatIndividual() {
+  const usuarioId = document.getElementById("usuariosSelect").value;
+
+  if (!usuarioId) {
+    alert("Selecciona un usuario antes de crear el chat.");
+    return;
   }
 
+  fetch('/api/chats/crear', {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tipo: "individual", miembros: [usuarioId] })
+  }).then(response => response.json())
+    .then(data => {
+      if (data.exito) window.location.href = "/Pantallas/Chat.html";
+      else alert("Error al crear el chat.");
+    })
+    .catch(error => console.error("Error al crear chat:", error));
+}
   //Crear chat grupal
   function crearGrupo() {
     const nombreGrupo = document.getElementById("nombreGrupo").value;

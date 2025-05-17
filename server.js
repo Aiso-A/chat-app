@@ -40,6 +40,7 @@ io.use((socket, next) => {
   sessionMiddleware(socket.request, socket.request.res || {}, next);
 });
 
+
 // Middlewares
 app.use(express.static(path.join(__dirname, 'Pantallas')));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -156,7 +157,17 @@ app.get('/api/usuarios', requireLogin, async (req, res) => {
 //Crear chat
 app.post('/api/chats/crear', requireLogin, async (req, res) => {
   try {
-    const nuevoChat = new Chat({ ...req.body, miembros: [req.session.usuario.id, ...req.body.miembros] });
+    const miembrosValidos = req.body.miembros.filter(id => id && mongoose.Types.ObjectId.isValid(id)); // Filtrar IDs inválidos
+
+    if (miembrosValidos.length < 1) {
+      return res.status(400).json({ exito: false, mensaje: "Debes seleccionar al menos un usuario para el chat." });
+    }
+
+    const nuevoChat = new Chat({ 
+      ...req.body, 
+      miembros: [req.session.usuario.id, ...miembrosValidos] // Agregar solo IDs válidos
+    });
+
     await nuevoChat.save();
     res.json({ exito: true });
   } catch (error) {
@@ -164,6 +175,7 @@ app.post('/api/chats/crear', requireLogin, async (req, res) => {
     res.status(500).json({ exito: false, mensaje: "Hubo un error al crear el chat." });
   }
 });
+
 
 // Cerrar sesión
 app.get('/logout', (req, res) => {
@@ -179,6 +191,7 @@ app.get('/logout', (req, res) => {
 
 // WebSockets
 io.on('connection', (socket) => {
+   console.log("Nueva conexión. Sesión disponible:", socket.request.session);
   const sessionData = socket.request.session;
   if (!sessionData || !sessionData.usuario) {
     console.log('🟢 Un usuario no autenticado se conectó');
