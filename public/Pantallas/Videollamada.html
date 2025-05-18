@@ -138,10 +138,11 @@
             icon.classList.toggle("bxs-video-off");
         });
 
-        // Manejo de cierre de conexión
-        document.getElementById("end-call-btn").addEventListener("click", () => {
-            peerConnection.close();
-            socket.disconnect();
+       document.getElementById("end-call-btn").addEventListener("click", () => {
+                  peerConnection.close();
+
+            // En lugar de desconectar completamente el socket, solo dejamos la sala de videollamada
+            socket.emit('leaveRoom', chatId);
         });
 
         window.onunload = window.onbeforeunload = () => {

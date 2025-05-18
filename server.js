@@ -342,6 +342,11 @@ socket.on('iceCandidate', (data) => {
 });
 });
 
+socket.on('leaveRoom', (roomId) => {
+    socket.leave(roomId);
+    console.log(`📞 Usuario salió de la sala de video: ${roomId}`);
+});
+
 // Middleware catch-all
 app.use((req, res, next) => {
   res.sendFile(path.resolve(__dirname, 'public', 'LogIn.html'));
