@@ -1,3 +1,4 @@
+const socket = io();
 const localVideo = document.getElementById("local-video");
 const remoteVideo = document.getElementById("remote-video");
 
@@ -27,10 +28,14 @@ async function iniciarLlamada() {
 function crearPeerConnection() {
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
-    // Recibir el stream remoto
+    // *Corrección importante*: Asegurar que el evento ontrack recibe el stream correctamente
     pc.ontrack = (event) => {
-        console.log("✅ Stream remoto recibido:", event.streams[0]);
-        remoteVideo.srcObject = event.streams[0];
+        if (event.streams.length > 0) {
+            console.log("✅ Stream remoto recibido correctamente.");
+            remoteVideo.srcObject = event.streams[0];
+        } else {
+            console.error("❌ No se recibió stream remoto.");
+        }
     };
 
     // Enviar candidatos ICE
@@ -59,8 +64,6 @@ socket.on("oferta", async (oferta) => {
 
     await peerConnection.setRemoteDescription(new RTCSessionDescription(oferta));
 
-    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
     socket.emit("respuesta", answer, salaId);
@@ -68,6 +71,9 @@ socket.on("oferta", async (oferta) => {
 
 socket.on("respuesta", async (respuesta) => {
     await peerConnection.setRemoteDescription(new RTCSessionDescription(respuesta));
+
+    // *Corrección clave*: Solo después de recibir respuesta, agregar los tracks para evitar que el stream remoto falle.
+    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 });
 
 // Corrección: *Asegurar que los candidatos ICE se añaden correctamente*
