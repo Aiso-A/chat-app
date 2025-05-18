@@ -59,7 +59,10 @@
 </div>
 </div>
 </div>
- 
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
 <!-- Socket.io -->
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -162,79 +165,82 @@
   document.getElementById('mensaje').value = '';
 });
 
+
+//Configuración de Supabase
+const supabaseUrl = 'https://ohatguqavmiiytptetmy.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9oYXRndXFhdm1paXl0cHRldG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NjE0NjcsImV4cCI6MjA2MzEzNzQ2N30.jeBEQmxvW0lBGcaOVlDTXraEHAFMEngyC2vyeLxqwtg';
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
 async function enviarArchivo() {
     const archivo = document.getElementById("file-input").files[0];
     if (!archivo) return;
 
-    const apiKey = "b26b7b0c13f6e3057805c4ac35254168"; 
-    const bucketUrl = "https://ohatguqavmiiytptetmy.supabase.co/storage/v1/object/public/chat-archivos";
+    const nombreArchivo = `${Date.now()}_${archivo.name}`;
 
-    const formData = new FormData();
-    formData.append("file", archivo);
+    const { data, error } = await supabase.storage
+        .from('chat-archivos')
+        .upload(nombreArchivo, archivo, {
+            cacheControl: '3600',
+            upsert: false
+        });
 
-    const respuesta = await fetch(`${bucketUrl}/${archivo.name}`, {
-        method: "POST", 
-        headers: { 
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": archivo.type
-        },
-        body: archivo
+    if (error) {
+        console.error("❌ Error al subir archivo:", error.message);
+        return;
+    }
+
+    const { data: publicUrlData } = supabase
+        .storage
+        .from('chat-archivos')
+        .getPublicUrl(nombreArchivo);
+
+    const urlArchivo = publicUrlData.publicUrl;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const chatId = urlParams.get('id');
+
+    socket.emit("mensaje", {
+        tipo: "archivo",
+        contenido: urlArchivo,
+        chatId: chatId
     });
 
-    if (respuesta.ok) {
-        const urlArchivo = `${bucketUrl}/${archivo.name}`;
-        
-        // Agregar el `chatId` al mensaje antes de enviarlo
-        const urlParams = new URLSearchParams(window.location.search);
-        const chatId = urlParams.get('id');
-
-        socket.emit("mensaje", { tipo: "archivo", contenido: urlArchivo, chatId: chatId });
-        console.log("📂 Archivo subido:", urlArchivo);
-    } else {
-        console.error("Error al subir archivo:", respuesta.statusText);
-    }
+    console.log("📂 Archivo subido:", urlArchivo);
 }
 
-    socket.on("nuevoMensaje", (mensaje) => {
-    console.log("🔔 Nuevo mensaje recibido:", mensaje);
+//Muestra mensajes de texto o archivos (imágenes o enlaces)
+socket.on("nuevoMensaje", (mensaje) => {
     const mensajesDiv = document.getElementById('mensajes');
     const div = document.createElement('div');
     div.className = 'mb-2';
 
-    //Manejo de errores: Verificar si el sender está definido
     const sender = mensaje.sender?.nombreUsuario || "Desconocido";
 
-    //Manejo de archivos adjuntos (incluyendo imágenes)
     if (mensaje.tipo === "archivo") {
         const extension = mensaje.contenido.split('.').pop().toLowerCase();
-
         if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
-            div.innerHTML = `<strong>${sender}:</strong> <br>
-            <img src="${mensaje.contenido}" alt="Archivo adjunto" style="max-width:200px; border-radius:5px; margin-top:5px;">`;
+            div.innerHTML = `<strong>${sender}:</strong><br>
+            <img src="${mensaje.contenido}" alt="Imagen" style="max-width:200px; border-radius:5px; margin-top:5px;">`;
         } else {
             div.innerHTML = `<strong>${sender}:</strong> 
             <a href="${mensaje.contenido}" target="_blank">📂 Ver archivo adjunto</a>`;
         }
-    } 
-    //Manejo de mensajes de texto normales
-    else if (mensaje.tipo === "texto" && mensaje.contenido.trim() !== "") {
+    } else if (mensaje.tipo === "texto" && mensaje.contenido.trim() !== "") {
         div.innerHTML = `<strong>${sender}:</strong> ${mensaje.contenido}`;
-    } 
-    //Si el mensaje está vacío o mal formado, no se muestra
-    else {
-        console.warn("⚠️ Mensaje recibido sin contenido válido.", mensaje);
+    } else {
+        console.warn("⚠️ Mensaje recibido sin contenido válido:", mensaje);
         return;
     }
 
     mensajesDiv.appendChild(div);
     mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
 });
-    
-    document.getElementById('startVideoCall').addEventListener('click', () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const chatId = urlParams.get('id');  // Opcional: puedes usar este chatId en la pantalla de videollamada
-  // Redirige a la pantalla de videollamada, pasando el chatId (si lo deseas)
-  window.location.href = `Videollamada.html?chatId=${chatId}`;
+
+//Botón para iniciar videollamada
+document.getElementById('startVideoCall').addEventListener('click', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const chatId = urlParams.get('id');
+    window.location.href = `Videollamada.html?chatId=${chatId}`;
 });
 
 </script>
