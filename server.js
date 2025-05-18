@@ -4,6 +4,7 @@ const path = require('path');
 const http = require('http');
 const socketIO = require('socket.io');
 const mongoose = require('mongoose');
+const multer = require('multer');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 require('dotenv').config();
@@ -33,6 +34,29 @@ const server = http.createServer(app);
 const io = socketIO(server);
 const PORT = process.env.PORT || 3000;
 const uri = process.env.MONGO_URI;
+
+// Configuración de Multer para subir imágenes y archivos
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); 
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+// Filtros para permitir solo ciertos tipos de archivos
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf', 'application/msword'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true); 
+  } else {
+    cb(new Error('Tipo de archivo no permitido'), false);
+  }
+};
+
+// Inicializar Multer
+const upload = multer({ storage: storage, fileFilter: fileFilter });
 
 // Conectar a MongoDB
 mongoose.connect(uri)
@@ -199,36 +223,39 @@ app.post('/api/chats/grupo', async (req, res) => {
 });
 
 // Enviar mensaje en un chat
-app.post('/api/enviar-mensaje', async (req, res) => {
+app.post('/api/enviar-mensaje', upload.single('archivo'), async (req, res) => {
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-  const { chatId, texto, cifrado } = req.body; // Recibimos la bandera de cifrado desde el cliente
+
+  const { chatId, texto, cifrado } = req.body;
+  const archivoPath = req.file ? `/uploads/${req.file.filename}` : null; // Guarda la ruta del archivo
+
   try {
-    // Si se solicita cifrado, usa encryptMessage; de lo contrario, el mensaje en claro
     const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
 
     const nuevoMensaje = new Mensaje({
       chat: chatId,
       sender: req.session.usuario._id,
       texto: mensajeTexto,
+      archivo: archivoPath, 
       cifrado
     });
 
     await nuevoMensaje.save();
     const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
 
-    console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${mensajeTexto}`);
-
-    // Emitir mensaje: si fue cifrado, descifrarlo para mostrarlo en el cliente
     io.to(chatId).emit('nuevoMensaje', {
       ...mensajeConInfo._doc,
-      texto: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto
+      texto: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto,
+      archivo: archivoPath 
     });
+
     res.json(mensajeConInfo);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al enviar mensaje' });
   }
 });
+
 
 
 // Obtener información de un chat (para header)

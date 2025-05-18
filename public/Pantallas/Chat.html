@@ -49,9 +49,11 @@
 <div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;"></div>
 <div class="card-footer">
 <form id="formularioMensaje" class="d-flex gap-2">
-<input type="text" id="mensaje" class="form-control" placeholder="Escribe tu mensaje..." required />
-<button type="submit" class="btn btn-primary">Enviar</button>
+  <input type="file" id="archivoInput" class="form-control" accept="image/*, .pdf, .doc, .docx" />
+  <input type="text" id="mensaje" class="form-control" placeholder="Escribe tu mensaje..." />
+  <button type="submit" class="btn btn-primary">Enviar</button>
 </form>
+
 </div>
 </div>
 </div>
@@ -114,23 +116,40 @@
         .catch(err => console.error('Error al cargar info del chat:', err));
     }
 
-    function loadMensajes(chatId) {
-      fetch(`/api/mensajes?chatId=${chatId}`)
-        .then(res => res.json())
-        .then(mensajes => {
-          console.log("📩 Mensajes recibidos:", mensajes);
-          const mensajesDiv = document.getElementById('mensajes');
-          mensajesDiv.innerHTML = '';
-          mensajes.forEach(m => {
-            const div = document.createElement('div');
-            div.className = 'mb-2';
-            div.innerHTML = `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto}`;
-            mensajesDiv.appendChild(div);
-          });
-          mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
-        })
-        .catch(err => console.error('Error al cargar mensajes:', err));
-    }
+   function loadMensajes(chatId) {
+  fetch(`/api/mensajes?chatId=${chatId}`)
+    .then(res => res.json())
+    .then(mensajes => {
+      const mensajesDiv = document.getElementById('mensajes');
+      mensajesDiv.innerHTML = '';
+
+      mensajes.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'mb-2';
+
+        // Mostrar texto si existe
+        if (m.texto) {
+          div.innerHTML += `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto}`;
+        }
+
+        // Mostrar imagen si existe
+        if (m.imagen) {
+          div.innerHTML += `<br><img src="${m.imagen}" alt="Imagen enviada" style="max-width: 200px; border-radius: 5px;">`;
+        }
+
+        // Mostrar archivos con enlace de descarga
+        if (m.archivo) {
+          div.innerHTML += `<br><a href="${m.archivo}" target="_blank">📄 Descargar archivo adjunto</a>`;
+        }
+
+        mensajesDiv.appendChild(div);
+      });
+
+      mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
+    })
+    .catch(err => console.error('Error al cargar mensajes:', err));
+}
+
 
     // 🔒 Cifrado opcional
     let cifradoActivo = false;
