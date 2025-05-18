@@ -259,7 +259,7 @@ app.get('/api/chat-info', async (req, res) => {
   }
 });
 
-// Obtener el historial de mensajes del chat
+//Mensajes
 app.get('/api/mensajes', async (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ error: 'No autenticado' });
@@ -268,28 +268,30 @@ app.get('/api/mensajes', async (req, res) => {
   try {
     const mensajes = await Mensaje.find({ chat: chatId })
       .populate('sender', 'nombreUsuario')
-      .sort({ fecha: 1 }); // Orden ascendente
-    
-    // Mapear los mensajes: descifrar aquellos que están cifrados
+      .sort({ fecha: 1 }); // Orden ascendente por fecha
+
+    // Recorremos cada mensaje y, si está cifrado, se descifra.
     const mensajesTransformados = mensajes.map(m => {
       let mensajeTexto = m.texto;
       if (m.cifrado) {
         try {
-          mensajeTexto = decryptMessage(m.texto);
+          const descifrado = decryptMessage(m.texto);
+          console.log(`Texto cifrado: ${m.texto} | Texto descifrado: ${descifrado}`);
+          mensajeTexto = descifrado;
         } catch (err) {
           console.error('Error al descifrar mensaje:', err);
         }
       }
-      // Retornar el mensaje con el texto desencriptado en caso de ser necesario
       return { ...m._doc, texto: mensajeTexto };
     });
-    
+
     res.json(mensajesTransformados);
   } catch (error) {
     console.error('Error al cargar mensajes:', error);
     res.status(500).json({ error: 'Error interno al obtener los mensajes' });
   }
 });
+
 
 //Socket.io//
 
