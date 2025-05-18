@@ -85,6 +85,8 @@ app.use(session({
   }
 }));
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 ///////Endpoints///////
 
@@ -224,10 +226,14 @@ app.post('/api/chats/grupo', async (req, res) => {
 
 // Enviar mensaje en un chat
 app.post('/api/enviar-mensaje', upload.single('archivo'), async (req, res) => {
+  console.log("📂 Archivo recibido:", req.file); 
+  
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
 
   const { chatId, texto, cifrado } = req.body;
-  const archivoPath = req.file ? `/uploads/${req.file.filename}` : null; // Guarda la ruta del archivo
+  const archivoPath = req.file ? `/uploads/${req.file.filename}` : null;
+
+  console.log("📂 Archivo guardado en:", archivoPath);
 
   try {
     const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
@@ -236,7 +242,7 @@ app.post('/api/enviar-mensaje', upload.single('archivo'), async (req, res) => {
       chat: chatId,
       sender: req.session.usuario._id,
       texto: mensajeTexto,
-      archivo: archivoPath, 
+      archivo: archivoPath,
       cifrado
     });
 
@@ -246,12 +252,12 @@ app.post('/api/enviar-mensaje', upload.single('archivo'), async (req, res) => {
     io.to(chatId).emit('nuevoMensaje', {
       ...mensajeConInfo._doc,
       texto: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto,
-      archivo: archivoPath 
+      archivo: archivoPath
     });
 
     res.json(mensajeConInfo);
   } catch (error) {
-    console.error(error);
+    console.error("❌ Error al guardar el mensaje:", error);
     res.status(500).json({ error: 'Error al enviar mensaje' });
   }
 });
