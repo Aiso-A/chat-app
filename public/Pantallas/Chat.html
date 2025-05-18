@@ -41,11 +41,25 @@
 <div class="card">
 <div class="card-header d-flex align-items-center justify-content-between">
 <div id="chat-header" class="d-flex align-items-center"></div>
-<button id="startCallBtn" class="btn btn-success">📹 Llamar</button>
 <button id="toggleEncryption">🔒 Cifrado: Desactivado</button>
 </div>
 <div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;"></div>
 <div class="card-footer">
+<form id="formularioMensaje" class="d-flex gap-2">
+<input type="text" id="mensaje" class="form-control" placeholder="Escribe tu mensaje..." required />
+<button type="submit" class="btn btn-primary">Enviar</button>
+</form>
+</div>
+</div>
+</div>
+
+<!-- 📌 Elementos para videollamada 📌 -->
+<div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;"></div>
+<div class="card-footer">
+<video id="localVideo" autoplay muted style="width: 150px;"></video>
+<video id="remoteVideo" autoplay style="width: 150px;"></video>
+<button id="startCallBtn" class="btn btn-success" style="display: none;">Iniciar videollamada</button>
+        
 <form id="formularioMensaje" class="d-flex gap-2">
 <input type="text" id="mensaje" class="form-control" placeholder="Escribe tu mensaje..." required />
 <button type="submit" class="btn btn-primary">Enviar</button>
@@ -166,22 +180,19 @@
       mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
     });
 
-</script>
-
-<script>
-    const startCallBtn = document.getElementById("startCallBtn");
+document.getElementById("startCallBtn").addEventListener("click", () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const targetId = urlParams.get('id');
+    const targetId = urlParams.get("id"); // Obtener el ID del usuario con quien chateamos
 
-    if (targetId && targetId.trim() !== "") {
-        startCallBtn.style.display = "block";
-        startCallBtn.addEventListener("click", () => {
-            window.location.href = `/Pantallas/Videollamada.html?id=${targetId}`;
-        });
-    } else {
-        console.error("❌ Error: targetId no válido.");
+    if (targetId) {
+        window.location.href = `/Pantallas/Videollamada.html?id=${targetId}`;
     }
+});
+
 </script>
+
+<!-- 📌 Enlace a videollamadas.js 📌 -->
+<script src="/videollamadas.js"></script>
 
 </body>
 </html>

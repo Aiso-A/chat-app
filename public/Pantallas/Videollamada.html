@@ -31,7 +31,7 @@
         <button id="camera-btn" class="control-btn">
             <i class="bx bxs-video"></i>
         </button>
-        <a href="/Pantallas/Chat.html" id="end-call-btn" class="control-btn end-call">
+        <a href="Individual.html" id="end-call-btn" class="control-btn end-call">
             <i class="bx bxs-phone-off"></i>
         </a>
     </div>
@@ -53,32 +53,6 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  
-    <script src="/socket.io/socket.io.js"></script>
-<script>
-    let usuarioActual = null;
-    const socket = io();
-
-    // Obtener usuario actual
-    fetch('/api/usuario-actual')
-      .then(res => res.json())
-      .then(data => {
-          if (!data || !data._id) {
-          console.warn("⚠ Usuario no autenticado");
-          window.location.href = "LogIn.html";
-          return;
-        }
-        usuarioActual = data;
-        document.getElementById('username').textContent = data.nombreUsuario;
-        socket.emit('usuarioConectado', data.nombreUsuario);
-
-        iniciarChat();
-      })
-      .catch(err => {
-        console.error("Error al obtener usuario:", err);
-        window.location.href = '/LogIn.html';
-      });
-</script>
 
 <script>
     // Extraer ID del usuario destino desde la URL
@@ -95,7 +69,7 @@
     }
 </script>
 
-<script src="/videollamada.js"></script>
+<script src="/videollamadas.js"></script>
 
 </body>
 </html>
