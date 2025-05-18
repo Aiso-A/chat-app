@@ -54,6 +54,27 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
+    <script>
+    let usuarioActual = null;
+    const socket = io();
+
+    // Obtener usuario actual
+    fetch('/api/usuario-actual')
+      .then(res => res.json())
+      .then(data => {
+          if (!data || !data._id) {
+            console.warn("⚠ Usuario no autenticado");
+            window.location.href = "LogIn.html";
+            return;
+          }
+          usuarioActual = data;
+          socket.emit('usuarioConectado', data.nombreUsuario);
+      })
+      .catch(err => {
+        console.error("Error al obtener usuario:", err);
+        window.location.href = '/LogIn.html';
+      });
+</script>
     <script src="/JS/videollamadas.js"></script>
 
 
