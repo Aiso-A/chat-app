@@ -10,10 +10,14 @@ let activeTargetId; //Guardar el ID del usuario destino
 //Capturar y enviar el flujo de video/audio
 navigator.mediaDevices.getUserMedia({ video: true, audio: true })
   .then((stream) => {
+    console.log("✅ Acceso a la cámara concedido:", stream);
     document.getElementById("localVideo").srcObject = stream;
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
   })
-  .catch(error => console.error("❌ Error al acceder a la cámara:", error));
+  .catch(error => {
+    console.error("❌ Error al acceder a la cámara:", error);
+    alert("No se pudo acceder a la cámara. Revisa los permisos y prueba de nuevo.");
+  });
 
 //Manejo del evento 'track' para recibir video del otro usuario
 peerConnection.ontrack = (event) => {
