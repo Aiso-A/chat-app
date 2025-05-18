@@ -303,6 +303,28 @@ io.on('connection', (socket) => {
     console.log(`✅ ${nombreUsuario} está conectado (${socket.id})`);
   });
 
+  // Videollamada
+  socket.on("unirse-sala", (salaId) => {
+    socket.join(salaId);
+    const usuariosEnSala = io.sockets.adapter.rooms.get(salaId);
+    if (usuariosEnSala && usuariosEnSala.size > 1) {
+      socket.to(salaId).emit("usuario-listo");
+    }
+  });
+
+  // Señalización WebRTC
+  socket.on("oferta", (oferta, salaId) => {
+    socket.to(salaId).emit("oferta", oferta);
+  });
+
+  socket.on("respuesta", (respuesta, salaId) => {
+    socket.to(salaId).emit("respuesta", respuesta);
+  });
+
+  socket.on("ice-candidato", (candidato, salaId) => {
+    socket.to(salaId).emit("ice-candidato", candidato);
+  });
+
   // Detectar desconexión y notificar
   socket.on('disconnect', () => {
     for (const [nombreUsuario, id] of usuariosConectados.entries()) {
@@ -314,7 +336,6 @@ io.on('connection', (socket) => {
     }
   });
 });
-
 // Middleware catch-all
 app.use((req, res, next) => {
   res.sendFile(path.resolve(__dirname, 'public', 'LogIn.html'));

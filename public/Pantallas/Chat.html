@@ -100,11 +100,20 @@
         .then(data => {
           const chatHeader = document.getElementById('chat-header');
           if (tipo === 'individual') {
-            chatHeader.innerHTML = `
-<img src="${data.avatar || '/default-avatar.png'}" alt="${data.nombre}" style="width:40px;height:40px;border-radius:50%;margin-right:10px;">
-<h5 class="mb-0">${data.nombre}</h5>
-            `;
-          } else {
+  chatHeader.innerHTML = `
+    <img src="${data.avatar || '/default-avatar.png'}" alt="${data.nombre}" style="width:40px;height:40px;border-radius:50%;margin-right:10px;">
+    <h5 class="mb-0 d-inline">${data.nombre}</h5>
+    <button id="callBtn" class="btn btn-sm btn-success ms-2">📞</button>
+  `;
+
+  // Espera que el botón se agregue al DOM antes de asignar el evento
+  setTimeout(() => {
+    document.getElementById("callBtn").addEventListener("click", () => {
+      const salaId = chatId;
+      window.location.href = `/Pantallas/Videollamada.html?sala=${salaId}`;
+    });
+  }, 0);
+} else {
             chatHeader.innerHTML = `<h5 class="mb-0">${data.nombre}</h5>`;
           }
         })
@@ -169,5 +178,3 @@
 
 </body>
 </html>
-
- 
