@@ -40,8 +40,11 @@
 <div class="chat-container">
 <div class="card">
 <div class="card-header d-flex align-items-center justify-content-between">
-<div id="chat-header" class="d-flex align-items-center"></div>
-<button id="toggleEncryption">🔒 Cifrado: Desactivado</button>
+  <div id="chat-header" class="d-flex align-items-center"></div>
+  <div>
+    <button id="startVideoCall" class="btn btn-outline-primary" style="margin-right:10px;">📹 Videollamada</button>
+    <button id="toggleEncryption" class="btn btn-outline-secondary">🔒 Cifrado: Desactivado</button>
+  </div>
 </div>
 <div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;"></div>
 <div class="card-footer">
@@ -164,6 +167,14 @@
       mensajesDiv.appendChild(div);
       mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
     });
+
+    
+    document.getElementById('startVideoCall').addEventListener('click', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const chatId = urlParams.get('id');  // Opcional: puedes usar este chatId en la pantalla de videollamada
+  // Redirige a la pantalla de videollamada, pasando el chatId (si lo deseas)
+  window.location.href = `Videollamada.html?chatId=${chatId}`;
+});
 
 </script>
 
