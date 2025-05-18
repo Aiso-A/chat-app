@@ -226,7 +226,8 @@ app.post('/api/chats/grupo', async (req, res) => {
 
 // Enviar mensaje en un chat
 app.post('/api/enviar-mensaje', upload.single('archivo'), async (req, res) => {
-  console.log("📂 Archivo recibido:", req.file); 
+   console.log("📩 Datos recibidos:", req.body);
+    console.log("📂 Archivo recibido:", req.file);
   
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
 

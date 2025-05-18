@@ -48,9 +48,9 @@
 </div>
 <div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;"></div>
 <div class="card-footer">
-<form id="formularioMensaje" class="d-flex gap-2">
-  <input type="file" id="archivoInput" class="form-control" accept="image/*, .pdf, .doc, .docx" />
-  <input type="text" id="mensaje" class="form-control" placeholder="Escribe tu mensaje..." />
+<form id="formularioMensaje" class="d-flex gap-2" enctype="multipart/form-data">
+  <input type="file" id="archivoInput" class="form-control" name="archivo" accept="image/*, .pdf, .doc, .docx" />
+  <input type="text" id="mensaje" class="form-control" name="texto" placeholder="Escribe tu mensaje..." />
   <button type="submit" class="btn btn-primary">Enviar</button>
 </form>
 
@@ -160,22 +160,31 @@
     });
 
     // Envío de mensajes con cifrado opcional
-    document.getElementById('formularioMensaje').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const texto = document.getElementById('mensaje').value.trim();
-  if (!texto) return;
+document.getElementById('formularioMensaje').addEventListener('submit', (event) => {
+    event.preventDefault();
+    
+    const formData = new FormData();
+    const chatId = new URLSearchParams(window.location.search).get('id');
+    const texto = document.getElementById('mensaje').value;
+    const archivo = document.getElementById('archivoInput').files[0];
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const chatId = urlParams.get('id');
+    formData.append('chatId', chatId);
+    formData.append('texto', texto);
+    formData.append('archivo', archivo);
 
-  await fetch('/api/enviar-mensaje', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chatId, texto, cifrado: cifradoActivo })
-  });
-
-  document.getElementById('mensaje').value = '';
+    fetch('/api/enviar-mensaje', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log("✅ Mensaje enviado:", data);
+        document.getElementById('mensaje').value = ''; // Limpiar campo de texto
+        document.getElementById('archivoInput').value = ''; // Limpiar selección de archivo
+    })
+    .catch(err => console.error("❌ Error al enviar mensaje:", err));
 });
+
 
     socket.on('nuevoMensaje', (mensaje) => {
       console.log("🔔 Nuevo mensaje recibido:", mensaje);
