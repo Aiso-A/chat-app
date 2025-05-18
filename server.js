@@ -278,8 +278,7 @@ app.get('/api/mensajes', async (req, res) => {
   }
 });
 
-
-//Socket.io//
+////Socket Io///////
 
 const usuariosConectados = new Map();
 
@@ -306,45 +305,44 @@ io.on('connection', (socket) => {
   });
 
   // Detectar desconexión y notificar
- socket.on('disconnect', () => {
-  setTimeout(() => {
-    if (!usuariosConectados.has(socket.id)) {
-      console.log(`🔴 Usuario ${socket.id} realmente se ha desconectado.`);
-      usuariosConectados.delete(socket.id);
-    }
-  }, 5000); // Espera 5 segundos antes de eliminarlo
-});
+  socket.on('disconnect', () => {
+    setTimeout(() => {
+      if (!usuariosConectados.has(socket.id)) {
+        console.log(`🔴 Usuario ${socket.id} realmente se ha desconectado.`);
+        usuariosConectados.delete(socket.id);
+      }
+    }, 5000); // Espera 5 segundos antes de eliminarlo
+  });
 
+  ///Código nuevo para las videollamadas///
+  // Manejadores para el videochat
+  socket.on('joinRoom', (roomId) => {
+    socket.join(roomId);
+    console.log(`Socket ${socket.id} se unió a la sala de video: ${roomId}`);
+    // Notifica a los demás que hay un nuevo usuario en la sala.
+    socket.to(roomId).emit('initiateCall');
+  });
 
-///Código nuevo para las videollamadas///
-// Manejadores para el videochat
-socket.on('joinRoom', (roomId) => {
-  socket.join(roomId);
-  console.log(`Socket ${socket.id} se unió a la sala de video: ${roomId}`);
-  // Notifica a los demás que hay un nuevo usuario en la sala.
-  socket.to(roomId).emit('initiateCall');
-});
+  socket.on('offer', (data) => {
+    console.log(`Recibida oferta de ${socket.id} para la sala ${data.roomId}`);
+    socket.to(data.roomId).emit('offer', data);
+  });
 
-socket.on('offer', (data) => {
-  // Reenvía la oferta al resto de la sala (excepto quien la envió)
-  console.log(`Recibida oferta de ${socket.id} para la sala ${data.roomId}`);
-  socket.to(data.roomId).emit('offer', data);
-});
+  socket.on('answer', (data) => {
+    console.log(`Recibida respuesta de ${socket.id} para la sala ${data.roomId}`);
+    socket.to(data.roomId).emit('answer', data);
+  });
 
-socket.on('answer', (data) => {
-  console.log(`Recibida respuesta de ${socket.id} para la sala ${data.roomId}`);
-  socket.to(data.roomId).emit('answer', data);
-});
+  socket.on('iceCandidate', (data) => {
+    console.log(`Recibido ICE Candidate de ${socket.id} para la sala ${data.roomId}`);
+    socket.to(data.roomId).emit('iceCandidate', data);
+  });
 
-socket.on('iceCandidate', (data) => {
-  console.log(`Recibido ICE Candidate de ${socket.id} para la sala ${data.roomId}`);
-  socket.to(data.roomId).emit('iceCandidate', data);
-});
-});
-
-socket.on('leaveRoom', (roomId) => {
+  // 🏆 Aquí movemos `socket.on('leaveRoom', ...)` dentro del bloque correcto
+  socket.on('leaveRoom', (roomId) => {
     socket.leave(roomId);
     console.log(`📞 Usuario salió de la sala de video: ${roomId}`);
+  });
 });
 
 // Middleware catch-all
