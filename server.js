@@ -313,6 +313,35 @@ io.on('connection', (socket) => {
       }
     }
   });
+
+  //Manejo de señalización WebRTC
+socket.on("offer", (data) => {
+  if (!data.target) {
+    console.error("❌ Error: target no definido en la oferta.");
+    return;
+  }
+  console.log("📡 Enviando oferta a:", data.target);
+  socket.to(data.target).emit("offer", data);
+});
+
+socket.on("answer", (data) => {
+  if (!data.target) {
+    console.error("❌ Error: target no definido en la respuesta.");
+    return;
+  }
+  console.log("📡 Enviando respuesta a:", data.target);
+  socket.to(data.target).emit("answer", data);
+});
+
+socket.on("ice-candidate", (data) => {
+  if (!data.target) {
+    console.error("❌ Error: target no definido en el candidato ICE.");
+    return;
+  }
+  console.log("📡 Enviando candidato ICE a:", data.target);
+  socket.to(data.target).emit("ice-candidate", data);
+});
+
 });
 
 // Middleware catch-all

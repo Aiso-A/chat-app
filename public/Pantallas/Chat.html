@@ -41,6 +41,7 @@
 <div class="card">
 <div class="card-header d-flex align-items-center justify-content-between">
 <div id="chat-header" class="d-flex align-items-center"></div>
+<button id="startCallBtn" class="btn btn-success">📹 Llamar</button>
 <button id="toggleEncryption">🔒 Cifrado: Desactivado</button>
 </div>
 <div class="card-body" id="mensajes" style="height: 400px; overflow-y: auto;"></div>
@@ -167,7 +168,20 @@
 
 </script>
 
+<script>
+    const startCallBtn = document.getElementById("startCallBtn");
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetId = urlParams.get('id');
+
+    if (targetId && targetId.trim() !== "") {
+        startCallBtn.style.display = "block";
+        startCallBtn.addEventListener("click", () => {
+            window.location.href = `/Pantallas/Videollamada.html?id=${targetId}`;
+        });
+    } else {
+        console.error("❌ Error: targetId no válido.");
+    }
+</script>
+
 </body>
 </html>
-
- 
