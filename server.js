@@ -303,6 +303,15 @@ io.on('connection', (socket) => {
     console.log(`✅ ${nombreUsuario} está conectado (${socket.id})`);
   });
 
+  socket.on("mensaje", async (mensaje) => {
+    if (mensaje.tipo === "archivo") {
+        console.log("📂 Archivo recibido:", mensaje.contenido);
+    }
+
+    io.to(mensaje.chatId).emit("nuevoMensaje", mensaje);  // Enviar el mensaje a los usuarios en el chat correspondiente
+});
+
+
   // Detectar desconexión y notificar
   socket.on('disconnect', () => {
     for (const [nombreUsuario, id] of usuariosConectados.entries()) {
@@ -339,6 +348,7 @@ socket.on('iceCandidate', (data) => {
   socket.to(data.roomId).emit('iceCandidate', data);
 });
 });
+
 
 // Middleware catch-all
 app.use((req, res, next) => {

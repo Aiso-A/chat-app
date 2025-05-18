@@ -52,6 +52,10 @@
 <input type="text" id="mensaje" class="form-control" placeholder="Escribe tu mensaje..." required />
 <button type="submit" class="btn btn-primary">Enviar</button>
 </form>
+  <!-- Input para archivos -->
+  <input type="file" id="file-input" class="form-control mt-2">
+  <button onclick="enviarArchivo()" class="btn btn-secondary mt-2">📂 Enviar Archivo</button>
+</div>
 </div>
 </div>
 </div>
@@ -171,8 +175,7 @@
     
     document.getElementById('startVideoCall').addEventListener('click', () => {
   const urlParams = new URLSearchParams(window.location.search);
-  const chatId = urlParams.get('id');  // Opcional: puedes usar este chatId en la pantalla de videollamada
-  // Redirige a la pantalla de videollamada, pasando el chatId (si lo deseas)
+  const chatId = urlParams.get('id');  
   window.location.href = `Videollamada.html?chatId=${chatId}`;
 });
 
@@ -180,5 +183,3 @@
 
 </body>
 </html>
-
- 

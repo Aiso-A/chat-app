@@ -32,6 +32,58 @@ async function cargarUsuarios() {
 document.addEventListener('DOMContentLoaded', () => {
   cargarUsuarios();
 
+async function enviarArchivo() {
+    const archivo = document.getElementById("file-input").files[0];
+    if (!archivo) return;
+
+    const apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9oYXRndXFhdm1paXl0cHRldG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NjE0NjcsImV4cCI6MjA2MzEzNzQ2N30.jeBEQmxvW0lBGcaOVlDTXraEHAFMEngyC2vyeLxqwtgY"; 
+    const bucketUrl = "https://ohatguqavmiiytptetmy.supabase.co/storage/v1/object/public/chat-archivos";
+
+    const formData = new FormData();
+    formData.append("file", archivo);
+
+    const respuesta = await fetch(`${bucketUrl}/${archivo.name}`, {
+        method: "PUT", 
+        headers: { 
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": archivo.type
+        },
+        body: archivo
+    });
+
+    if (respuesta.ok) {
+        const urlArchivo = `${bucketUrl}/${archivo.name}`;
+        
+        // Agregar el `chatId` al mensaje antes de enviarlo
+        const urlParams = new URLSearchParams(window.location.search);
+        const chatId = urlParams.get('id');
+
+        socket.emit("mensaje", { tipo: "archivo", contenido: urlArchivo, chatId: chatId });
+        console.log("📂 Archivo subido:", urlArchivo);
+    } else {
+        console.error("Error al subir archivo:", respuesta.statusText);
+    }
+}
+
+socket.on("nuevoMensaje", (mensaje) => {
+    const mensajesDiv = document.getElementById('mensajes');
+    const div = document.createElement('div');
+    div.className = 'mb-2';
+
+    // Verificar si `mensaje.sender` está definido para evitar errores
+    const sender = mensaje.sender?.nombreUsuario || "Desconocido";
+
+    if (mensaje.tipo === "archivo") {
+        div.innerHTML = `<strong>${sender}:</strong> 
+        <a href="${mensaje.contenido}" target="_blank">📂 Ver archivo adjunto</a>`;
+    } else {
+        div.innerHTML = `<strong>${sender}:</strong> ${mensaje.texto}`;
+    }
+
+    mensajesDiv.appendChild(div);
+    mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
+});
+
   // Cerrar sesión
   document.getElementById('cerrarSesion').addEventListener('click', () => {
     sessionStorage.clear();
