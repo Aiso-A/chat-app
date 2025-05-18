@@ -26,19 +26,42 @@ async function iniciarLlamada() {
     }
 }
 
-socket.on("usuario-listo", async () => {
-    peerConnection = crearPeerConnection();
-    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+// Crear conexión WebRTC
+function crearPeerConnection() {
+    const pc = new RTCPeerConnection(ICE_SERVERS);
 
+    // Manejar la recepción del stream remoto
+    pc.ontrack = (event) => {
+        console.log("Stream remoto recibido:", event.streams[0]);
+        remoteVideo.srcObject = event.streams[0];
+    };
+
+    // Enviar candidatos ICE
+    pc.onicecandidate = (event) => {
+        if (event.candidate) {
+            socket.emit("ice-candidato", event.candidate, salaId);
+        }
+    };
+
+    return pc;
+}
+
+// Flujo de oferta/respuesta WebRTC
+socket.on("usuario-listo", async () => {
+    if (!peerConnection) peerConnection = crearPeerConnection();
+    
+    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+    
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
     socket.emit("oferta", offer, salaId);
 });
 
 socket.on("oferta", async (oferta) => {
-    peerConnection = crearPeerConnection();
+    if (!peerConnection) peerConnection = crearPeerConnection();
+    
     localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
+    
     await peerConnection.setRemoteDescription(new RTCSessionDescription(oferta));
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
@@ -56,21 +79,5 @@ socket.on("ice-candidato", async (candidato) => {
         console.error("Error al añadir candidato ICE", e);
     }
 });
-
-function crearPeerConnection() {
-    const pc = new RTCPeerConnection(ICE_SERVERS);
-
-    pc.ontrack = (event) => {
-        remoteVideo.srcObject = event.streams[0];
-    };
-
-    pc.onicecandidate = (event) => {
-        if (event.candidate) {
-            socket.emit("ice-candidato", event.candidate, salaId);
-        }
-    };
-
-    return pc;
-}
 
 iniciarLlamada();
