@@ -7,6 +7,8 @@ const mongoose = require('mongoose');
 const multer = require('multer');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
+const fs = require('fs');
+
 require('dotenv').config();
 
 // Models
@@ -14,7 +16,7 @@ const Usuario = require('./models/Usuarios');
 const Chat = require('./models/Chat');
 const Mensaje = require('./models/Mensaje');
 
-// <-- NUEVO: Importar simple-encryptor e inicializarlo
+
 const simpleEncryptor = require('simple-encryptor');
 const secretKey = process.env.ENCRYPTION_KEY || 'default_secret_key';
 const encryptor = simpleEncryptor(secretKey);
@@ -35,28 +37,39 @@ const io = socketIO(server);
 const PORT = process.env.PORT || 3000;
 const uri = process.env.MONGO_URI;
 
+// Verificar si la carpeta uploads/ existe, si no, crearla
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+  console.log("📂 Carpeta 'uploads/' creada automáticamente.");
+}
+
+// Servir archivos desde la carpeta uploads/
+app.use('/uploads', express.static(uploadsDir));
+
 // Configuración de Multer para subir imágenes y archivos
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'uploads/'); 
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
+    cb(null, Date.now() + '-' + file.originalname); 
   }
 });
 
-// Filtros para permitir solo ciertos tipos de archivos
+//Filtro para tipos de archivos permitidos
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf', 'application/msword'];
   if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true); 
+    cb(null, true);
   } else {
     cb(new Error('Tipo de archivo no permitido'), false);
   }
 };
 
-// Inicializar Multer
+//Inicializar Multer con la configuración
 const upload = multer({ storage: storage, fileFilter: fileFilter });
+
 
 // Conectar a MongoDB
 mongoose.connect(uri)
@@ -84,8 +97,6 @@ app.use(session({
     path: '/' 
   }
 }));
-
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 ///////Endpoints///////
@@ -226,9 +237,9 @@ app.post('/api/chats/grupo', async (req, res) => {
 
 // Enviar mensaje en un chat
 app.post('/api/enviar-mensaje', upload.single('archivo'), async (req, res) => {
-   console.log("📩 Datos recibidos:", req.body);
-    console.log("📂 Archivo recibido:", req.file);
-  
+  console.log("📩 Datos recibidos:", req.body);
+  console.log("📂 Archivo recibido:", req.file);
+
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
 
   const { chatId, texto, cifrado } = req.body;
@@ -237,7 +248,7 @@ app.post('/api/enviar-mensaje', upload.single('archivo'), async (req, res) => {
   console.log("📂 Archivo guardado en:", archivoPath);
 
   try {
-    const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
+    const mensajeTexto = texto ? (cifrado ? encryptMessage(texto) : texto) : null;
 
     const nuevoMensaje = new Mensaje({
       chat: chatId,
@@ -258,15 +269,13 @@ app.post('/api/enviar-mensaje', upload.single('archivo'), async (req, res) => {
 
     res.json(mensajeConInfo);
   } catch (error) {
-    console.error("❌ Error al guardar el mensaje:", error);
-    res.status(500).json({ error: 'Error al enviar mensaje' });
+    console.error("❌ Error en el servidor:", error);
+    res.status(500).json({ error: 'Error interno al enviar mensaje' }); // 💡 Asegura que se devuelve JSON, no HTML
   }
 });
 
 
-
-// Obtener información de un chat (para header)
-// Para chats individuales, devuelve datos del otro usuario; para grupales, el nombre del grupo.
+// Para chats individuales
 app.get('/api/chat-info', async (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ error: 'No autenticado' });
