@@ -316,7 +316,7 @@ io.on('connection', (socket) => {
 });
 
 // Middleware catch-all
-app.use((req, res, next) => {
+app.get('/', (req, res) => {
   res.sendFile(path.resolve(__dirname, 'public', 'LogIn.html'));
 });
 
