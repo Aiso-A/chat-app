@@ -337,10 +337,9 @@ io.on('connection', (socket) => {
   });
 });
 // Middleware catch-all
-app.use((req, res, next) => {
-  res.sendFile(path.resolve(__dirname, 'public', 'LogIn.html'));
+app.get('*', (req, res) => {
+  res.status(404).send('Página no encontrada');
 });
-
 // Iniciar servidor
 server.listen(PORT, () => {
   console.log(`🚀 Servidor escuchando en el puerto ${PORT}`);
