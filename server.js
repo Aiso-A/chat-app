@@ -275,11 +275,11 @@ app.get('/api/mensajes', async (req, res) => {
       let mensajeTexto = m.texto;
       if (m.cifrado) {
         try {
-          const descifrado = decryptMessage(m.texto);
-          console.log(`Texto cifrado: ${m.texto} | Texto descifrado: ${descifrado}`);
-          mensajeTexto = descifrado;
-        } catch (err) {
-          console.error('Error al descifrar mensaje:', err);
+        const descifrado = decryptMessage(m.texto);
+        console.log(`Texto cifrado: ${m.texto} | Texto descifrado: ${descifrado}`);
+        mensajeTexto = descifrado;
+      } catch (err) {
+       console.error('Error al descifrar mensaje:', err);
         }
       }
       return { ...m._doc, texto: mensajeTexto };
