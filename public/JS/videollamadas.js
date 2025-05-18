@@ -4,9 +4,7 @@ const remoteVideo = document.getElementById("remote-video");
 let peerConnection;
 let localStream;
 const ICE_SERVERS = {
-    iceServers: [
-        { urls: "stun:stun.l.google.com:19302" }
-    ]
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
 };
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -29,9 +27,9 @@ async function iniciarLlamada() {
 function crearPeerConnection() {
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
-    // Manejar la recepción del stream remoto
+    // Recibir el stream remoto
     pc.ontrack = (event) => {
-        console.log("Stream remoto recibido:", event.streams[0]);
+        console.log("✅ Stream remoto recibido:", event.streams[0]);
         remoteVideo.srcObject = event.streams[0];
     };
 
@@ -48,9 +46,9 @@ function crearPeerConnection() {
 // Flujo de oferta/respuesta WebRTC
 socket.on("usuario-listo", async () => {
     if (!peerConnection) peerConnection = crearPeerConnection();
-    
+
     localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-    
+
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
     socket.emit("oferta", offer, salaId);
@@ -58,10 +56,11 @@ socket.on("usuario-listo", async () => {
 
 socket.on("oferta", async (oferta) => {
     if (!peerConnection) peerConnection = crearPeerConnection();
-    
-    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-    
+
     await peerConnection.setRemoteDescription(new RTCSessionDescription(oferta));
+
+    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
     socket.emit("respuesta", answer, salaId);
@@ -71,11 +70,14 @@ socket.on("respuesta", async (respuesta) => {
     await peerConnection.setRemoteDescription(new RTCSessionDescription(respuesta));
 });
 
+// Corrección: *Asegurar que los candidatos ICE se añaden correctamente*
 socket.on("ice-candidato", async (candidato) => {
     try {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(candidato));
+        if (peerConnection) {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(candidato));
+        }
     } catch (e) {
-        console.error("Error al añadir candidato ICE", e);
+        console.error("❌ Error al añadir candidato ICE", e);
     }
 });
 
