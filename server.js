@@ -282,37 +282,65 @@ app.get('/api/mensajes', async (req, res) => {
 const usuariosConectados = new Map();
 
 io.on('connection', (socket) => {
-  console.log('🟢 Un usuario se conectó');
+    console.log('🟢 Un usuario se conectó');
 
-  // Permitir que un socket se una a una sala específica (para recibir mensajes de un chat)
-  socket.on('joinRoom', (chatId) => {
-    socket.join(chatId);
-    console.log(`Socket ${socket.id} se unió a la sala ${chatId}`);
-  });
+    // Unirse a una sala de chat o videollamada
+    socket.on('joinRoom', (chatId) => {
+        socket.join(chatId);
+        console.log('Socket ${socket.id} se unió a la sala ${chatId}');
+    });
 
-  // Registrar usuario conectado
-  socket.on('usuarioConectado', (nombreUsuario) => {
-    if (usuariosConectados.has(nombreUsuario)) {
-      const socketIdAnterior = usuariosConectados.get(nombreUsuario);
-      io.to(socketIdAnterior).emit('duplicado');
-      const anteriorSocket = io.sockets.sockets.get(socketIdAnterior);
-      if (anteriorSocket) anteriorSocket.disconnect();
-      console.log(`🔁 Usuario ${nombreUsuario} inició sesión en otro lugar. Cerrando la sesión anterior.`);
-    }
-    usuariosConectados.set(nombreUsuario, socket.id);
-    console.log(`✅ ${nombreUsuario} está conectado (${socket.id})`);
-  });
+    // Registrar usuario conectado
+    socket.on('usuarioConectado', (nombreUsuario) => {
+        if (usuariosConectados.has(nombreUsuario)) {
+            const socketIdAnterior = usuariosConectados.get(nombreUsuario);
+            io.to(socketIdAnterior).emit('duplicado');
+            const anteriorSocket = io.sockets.sockets.get(socketIdAnterior);
+            if (anteriorSocket) anteriorSocket.disconnect();
+            console.log('🔁 Usuario ${nombreUsuario} inició sesión en otro lugar. Cerrando la sesión anterior.');
+        }
+        usuariosConectados.set(nombreUsuario, socket.id);
+        console.log('✅ ${nombreUsuario} está conectado (${socket.id})');
+    });
 
-  // Detectar desconexión y notificar
-  socket.on('disconnect', () => {
-    for (const [nombreUsuario, id] of usuariosConectados.entries()) {
-      if (id === socket.id) {
-        usuariosConectados.delete(nombreUsuario);
-        console.log(`🔴 ${nombreUsuario} se desconectó`);
-        break;
-      }
-    }
-  });
+    // Videollamada
+    socket.on("unirse-sala", (salaId) => {
+        socket.join(salaId);
+        const usuariosEnSala = io.sockets.adapter.rooms.get(salaId);
+        if (usuariosEnSala && usuariosEnSala.size > 1) {
+            console.log('📢 Hay más de un usuario en la sala ${salaId}, iniciando la videollamada.');
+            socket.to(salaId).emit("usuario-listo");
+        }
+    });
+
+    // Corrección en transmisión de oferta
+    socket.on("oferta", (oferta, salaId) => {
+        console.log('📡 Oferta WebRTC recibida en sala ${salaId}. Enviando...');
+        socket.to(salaId).emit("oferta", oferta);
+    });
+
+    // Corrección en transmisión de respuesta
+    socket.on("respuesta", (respuesta, salaId) => {
+        console.log('✅ Respuesta WebRTC recibida en sala ${salaId}. Enviando...');
+        socket.to(salaId).emit("respuesta", respuesta);
+    });
+
+    // Manejo de candidatos ICE
+    socket.on("ice-candidato", (candidato, salaId) => {
+        console.log('🌎 Candidato ICE recibido. Enviando a la sala ${salaId}...');
+        socket.to(salaId).emit("ice-candidato", candidato);
+    });
+
+    // Detectar desconexión y limpiar usuario
+    socket.on('disconnect', () => {
+        for (const [nombreUsuario, id] of usuariosConectados.entries()) {
+            if (id === socket.id) {
+                usuariosConectados.delete(nombreUsuario);
+                console.log('🔴 ${nombreUsuario} se desconectó');
+                break;
+            }
+        }
+    });
 });
 
 // Middleware catch-all
