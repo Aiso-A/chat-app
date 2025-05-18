@@ -3,14 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ByteTalk - Llamando..</title>
+    <title>ByteTalk - Llamando...</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Exo+2:wght@800&family=Saira+Stencil+One&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Videollamada.css">
-    <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">       
+    <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
 </head>
 <body>
-    
+
+    <!-- Verificar sesión antes de iniciar la llamada -->
+    <script>
+        fetch('/api/usuario-actual')
+            .then(res => res.json())
+            .then(data => {
+                if (!data || !data._id) {
+                    console.warn("⚠️ Sesión perdida en Videollamada.html");
+                    window.location.href = "/LogIn.html";
+                } else {
+                    console.log("🔵 Usuario en videollamada:", data.nombreUsuario);
+                    localStorage.setItem('chatId', new URLSearchParams(window.location.search).get('chatId'));
+                }
+            })
+            .catch(err => console.error("Error obteniendo usuario en llamada:", err));
+    </script>
+
     <div class="video-call-container">
         <!-- Usuario -->
         <div class="video-container">
@@ -43,9 +59,8 @@
         let localStream, peerConnection;
         const socket = io();
 
-        // Obtener el chatId de la URL para usarlo como identificador de la sala
-        const urlParams = new URLSearchParams(window.location.search);
-        const roomId = urlParams.get('chatId');
+        // Obtener el chatId desde localStorage o la URL
+        const chatId = localStorage.getItem('chatId') || new URLSearchParams(window.location.search).get('chatId');
 
         // Capturar la cámara y el micrófono
         navigator.mediaDevices.getUserMedia({ video: true, audio: true })
@@ -53,7 +68,7 @@
                 localStream = stream;
                 document.getElementById('local-video').srcObject = stream;
                 inicializarPeerConnection();
-                socket.emit('joinRoom', roomId);
+                socket.emit('joinRoom', chatId);
             })
             .catch(error => console.error("Error accediendo a la cámara/micrófono:", error));
 
@@ -74,7 +89,7 @@
             // Manejar candidatos ICE
             peerConnection.onicecandidate = event => {
                 if (event.candidate) {
-                    socket.emit('iceCandidate', { candidate: event.candidate, roomId });
+                    socket.emit('iceCandidate', { candidate: event.candidate, roomId: chatId });
                 }
             };
         }
@@ -84,7 +99,7 @@
             peerConnection.createOffer()
                 .then(offer => peerConnection.setLocalDescription(offer))
                 .then(() => {
-                    socket.emit('offer', { roomId, sdp: peerConnection.localDescription });
+                    socket.emit('offer', { roomId: chatId, sdp: peerConnection.localDescription });
                 });
         });
 
@@ -93,7 +108,7 @@
                 .then(() => peerConnection.createAnswer())
                 .then(answer => peerConnection.setLocalDescription(answer))
                 .then(() => {
-                    socket.emit('answer', { roomId, sdp: peerConnection.localDescription });
+                    socket.emit('answer', { roomId: chatId, sdp: peerConnection.localDescription });
                 });
         });
 
@@ -123,9 +138,14 @@
             icon.classList.toggle("bxs-video-off");
         });
 
-        // Cierre de conexión al salir de la página
+        // Manejo de cierre de conexión
+        document.getElementById("end-call-btn").addEventListener("click", () => {
+            peerConnection.close();
+            socket.disconnect();
+        });
+
         window.onunload = window.onbeforeunload = () => {
-            if (peerConnection) peerConnection.close();
+            peerConnection.close();
             socket.disconnect();
         };
     </script>

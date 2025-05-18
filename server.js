@@ -56,7 +56,7 @@ app.use(session({
   cookie: {
     maxAge: 1000 * 60 * 60 * 24,
     sameSite: 'lax',
-    secure: false,
+    secure: true,
     path: '/' 
   }
 }));
@@ -237,19 +237,21 @@ app.get('/api/chat-info', async (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ error: 'No autenticado' });
   }
-  const { id, tipo } = req.query;
+
+  const chatId = req.query.id || req.session.chatId;
+  if (!chatId || chatId === "null") {
+    return res.status(400).json({ error: 'chatId inválido' });
+  }
+
   try {
-    const chat = await Chat.findById(id).populate('usuarios', 'nombreUsuario avatar');
+    const chat = await Chat.findById(chatId).populate('usuarios', 'nombreUsuario avatar');
     if (!chat) {
       return res.status(404).json({ error: 'Chat no encontrado' });
     }
-    if (tipo === 'individual') {
+
+    if (req.query.tipo === 'individual') {
       const otroUsuario = chat.usuarios.find(u => u._id.toString() !== req.session.usuario._id.toString());
-      if (!otroUsuario) return res.status(404).json({ error: 'Usuario receptor no encontrado' });
-      return res.json({ 
-        nombre: otroUsuario.nombreUsuario, 
-        avatar: otroUsuario.avatar 
-      });
+      return res.json({ nombre: otroUsuario?.nombreUsuario || "Usuario desconocido", avatar: otroUsuario?.avatar || "/default-avatar.png" });
     } else {
       return res.json({ nombre: chat.nombre });
     }
@@ -304,15 +306,15 @@ io.on('connection', (socket) => {
   });
 
   // Detectar desconexión y notificar
-  socket.on('disconnect', () => {
-    for (const [nombreUsuario, id] of usuariosConectados.entries()) {
-      if (id === socket.id) {
-        usuariosConectados.delete(nombreUsuario);
-        console.log(`🔴 ${nombreUsuario} se desconectó`);
-        break;
-      }
+ socket.on('disconnect', () => {
+  setTimeout(() => {
+    if (!usuariosConectados.has(socket.id)) {
+      console.log(`🔴 Usuario ${socket.id} realmente se ha desconectado.`);
+      usuariosConectados.delete(socket.id);
     }
-  });
+  }, 5000); // Espera 5 segundos antes de eliminarlo
+});
+
 
 ///Código nuevo para las videollamadas///
 // Manejadores para el videochat
