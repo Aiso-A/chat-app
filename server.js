@@ -206,13 +206,18 @@ app.post('/api/enviar-mensaje', async (req, res) => {
     // Si se solicita cifrado, usa encryptMessage; de lo contrario, el mensaje en claro
     const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
 
-    const nuevoMensaje = new Mensaje({
+    const mensajeData = {
       chat: chatId,
       sender: req.session.usuario._id,
-      texto: mensajeTexto ||"",
       cifrado,
-      archivoUrl: archivoUrl || null //Para guardar archivos
-    });
+      archivoUrl: archivoUrl || null
+    };
+
+    if (mensajeTexto && mensajeTexto.trim() !== "") {
+      mensajeData.texto = mensajeTexto;
+    }
+
+    const nuevoMensaje = new Mensaje(mensajeData);
 
     await nuevoMensaje.save();
     const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
