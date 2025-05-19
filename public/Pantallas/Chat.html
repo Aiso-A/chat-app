@@ -156,11 +156,17 @@
   const urlParams = new URLSearchParams(window.location.search);
   const chatId = urlParams.get('id');
 
-  await fetch('/api/enviar-mensaje', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chatId, texto, cifrado: cifradoActivo })
-  });
+  await fetch("/api/enviar-mensaje", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        chatId: chatId,
+        texto: "📂 Archivo adjunto", 
+        archivoUrl: urlArchivo
+    })
+});
 
   document.getElementById('mensaje').value = '';
 });
