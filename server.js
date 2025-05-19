@@ -299,6 +299,58 @@ app.get('/api/mensajes', async (req, res) => {
   }
 });
 
+//Creación de tareas
+app.post('/api/tareas', async (req, res) => {
+  if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
+
+  const { descripcion, fechaVencimiento } = req.body;
+  try {
+    const nuevaTarea = new Tarea({
+      usuario: req.session.usuario._id,
+      descripcion,
+      fechaVencimiento
+    });
+    await nuevaTarea.save();
+    res.json(nuevaTarea);
+  } catch (error) {
+    console.error("Error al crear tarea:", error);
+    res.status(500).json({ error: "Error interno" });
+  }
+});
+
+//Completar tareas
+app.put('/api/tareas/:id', async (req, res) => {
+  if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
+
+  try {
+    const tarea = await Tarea.findById(req.params.id);
+    if (!tarea) return res.status(404).json({ error: "Tarea no encontrada" });
+
+    const ahora = new Date();
+    if (tarea.fechaVencimiento < ahora) {
+      return res.status(400).json({ error: "La tarea está vencida y no puede ser completada." });
+    }
+
+    tarea.completada = true;
+    await tarea.save();
+
+    // Incrementar tareas completadas solo si no está vencida
+    const usuario = await Usuario.findById(req.session.usuario._id);
+    usuario.tareasCompletadas += 1;
+
+    // Desbloquear avatar si ha completado un múltiplo de 5 tareas válidas
+    if (usuario.tareasCompletadas % 5 === 0 && usuario.tareasCompletadas <= 25) {
+      const avatarIndex = usuario.tareasCompletadas / 5;
+      usuario.avatar = `/img/avatar${avatarIndex}.png`;
+    }
+
+    await usuario.save();
+    res.json({ mensaje: "Tarea completada", tareasCompletadas: usuario.tareasCompletadas, avatar: usuario.avatar });
+  } catch (error) {
+    console.error("Error al completar tarea:", error);
+    res.status(500).json({ error: "Error interno" });
+  }
+});
 
 
 //Socket.io//

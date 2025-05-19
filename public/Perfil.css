@@ -91,3 +91,32 @@ body {
     font-size: 16px;
     color: #FFFFFF;
 }
+
+.progress-bar {
+    background: linear-gradient(90deg, #00FFFF, #8A2BE2);
+    height: 20px;
+    border-radius: 5px;
+    transition: width 0.5s ease-in-out;
+}
+
+.modal-content {
+    background-color: #1E1E1E;
+    color: #FFFFFF;
+    text-align: center;
+    animation: fadeIn 0.5s ease-in-out;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(138, 43, 226, 0.6);
+}
+
+.avatar-logro {
+    width: 100px;
+    border-radius: 50%;
+    margin-top: 10px;
+    border: 2px solid #FF007F;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}

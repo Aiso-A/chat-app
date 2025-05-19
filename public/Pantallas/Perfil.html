@@ -1,59 +1,82 @@
 <!DOCTYPE html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>ByteTalk - LogIn</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-        <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Exo+2:wght@800&family=Saira+Stencil+One&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="/Perfil.css">
-        <link rel="stylesheet" href="/Sidebar.css">
-        <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">       
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ByteTalk - Perfil</title>
+    <link rel="stylesheet" href="/Perfil.css">
+    <link rel="stylesheet" href="/Sidebar.css">
+</head>
 <body>
 
-     <!-- Menú lateral -->
+    <!-- Menú lateral -->
     <nav class="sidebar d-flex flex-column p-3">
         <h2 class="app-title text-center">ByteTalk</h2>
         <ul class="nav flex-column">
             <li class="nav-item"><a href="/Pantallas/Chats.html" class="nav-link">Volver a Chats</a></li>
             <li class="nav-item"><a href="/Pantallas/Perfil.html" class="nav-link">Perfil</a></li>
             <li class="nav-item"><a href="/Pantallas/Admin.html" class="nav-link">Tareas</a></li>
-            <li class="nav-item"><a href="//LogIn.html" class="nav-link">Cerrar sesión</a></li>
+            <li class="nav-item"><a href="/LogIn.html" class="nav-link">Cerrar sesión</a></li>
         </ul>
     </nav>
 
     <div class="container profile-container">
-        
-        <!-- Sección de Perfil -->
         <div class="profile-header text-center">
-            <div class="profile-avatar"></div> 
-            <h2 class="username">MaSanti_93</h2> 
-            <p class="full-name">Marco Santiago Gomez Martines</p> 
-            <p class="email">POIPrueba@gmail.com</p> 
-            <span class="status online">● Activo</span>
+            <img id="avatar" class="profile-avatar"> 
+            <h2 id="username"></h2> 
+            <p id="progress-text"></p>
         </div>
 
-        <!-- Sección de Recompensas -->
+        <!-- Recompensas -->
         <div class="rewards-section">
-            <h3 class="section-title">🎉 Recompensas</h3>
+            <h3>🎉 Recompensas</h3>
             <div class="progress-container">
                 <div class="progress">
-                    <div class="progress-bar" style="width: 40%;">40%</div> <!-- Barra de progreso -->
+                    <div id="progress-bar" class="progress-bar"></div>
                 </div>
-                <p class="progress-text">¡Completa 6 tareas más para el siguiente nivel!</p>
-            </div>
-
-            
-            <div class="reward">
-                <div class="reward-image"></div>
-                <p class="reward-description">Avatar exclusivo desbloqueado</p>
             </div>
         </div>
-
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Modal de Logro -->
+    <div id="logroModal" class="modal">
+        <div class="modal-content">
+            <h2>¡Has desbloqueado un nuevo avatar! 🎉</h2>
+            <p id="logroTexto"></p>
+            <img id="nuevoAvatarLogro" class="avatar-logro">
+            <button onclick="cerrarLogro()">Cerrar</button>
+        </div>
+    </div>
 
+    <script>
+        async function cargarPerfil() {
+            const res = await fetch('/api/usuario-actual');
+            const usuario = await res.json();
+
+            document.getElementById("avatar").src = usuario.avatar;
+            document.getElementById("username").innerText = usuario.nombreUsuario;
+            
+            const progreso = usuario.tareasCompletadas % 5;
+            const tareasRestantes = 5 - progreso;
+            document.getElementById("progress-text").innerText = `Te faltan ${tareasRestantes} tareas para el siguiente nivel`;
+            document.getElementById("progress-bar").style.width = `${(progreso / 5) * 100}%`;
+
+            if (progreso === 0 && usuario.tareasCompletadas > 0) {
+                mostrarLogro(usuario.avatar, usuario.tareasCompletadas);
+            }
+        }
+
+        function mostrarLogro(avatarUrl, tareas) {
+            document.getElementById("nuevoAvatarLogro").src = avatarUrl;
+            document.getElementById("logroTexto").innerText = `Has completado ${tareas} tareas y desbloqueado un avatar exclusivo!`;
+            document.getElementById("logroModal").style.display = "block";
+        }
+
+        function cerrarLogro() {
+            document.getElementById("logroModal").style.display = "none";
+        }
+
+        cargarPerfil();
+    </script>
 </body>
 </html>
