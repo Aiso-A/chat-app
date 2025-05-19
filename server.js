@@ -209,7 +209,7 @@ app.post('/api/enviar-mensaje', async (req, res) => {
     const nuevoMensaje = new Mensaje({
       chat: chatId,
       sender: req.session.usuario._id,
-      texto: mensajeTexto,
+      texto: mensajeTexto ||"",
       cifrado,
       archivoUrl: archivoUrl || null //Para guardar archivos
     });
