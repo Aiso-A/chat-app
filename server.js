@@ -225,11 +225,13 @@ const nuevoMensaje = new Mensaje(mensajeData);
     console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${mensajeTexto}`);
 
     // Emitir mensaje: si fue cifrado, descifrarlo para mostrarlo en el cliente
-    io.to(chatId).emit('nuevoMensaje', {
-      ...mensajeConInfo._doc,
-      texto: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto,
-      archivoUrl: archivoUrl  //Emitimos también la URL del archivo
+     io.to(chatId).emit('nuevoMensaje', {
+    ...mensajeConInfo._doc,
+    tipo: archivoUrl ? "archivo" : "texto",
+    contenido: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto,
+   archivoUrl: archivoUrl
     });
+
     res.json(mensajeConInfo);
   } catch (error) {
     console.error(error);

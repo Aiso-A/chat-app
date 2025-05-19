@@ -223,36 +223,36 @@ await fetch("/api/enviar-mensaje", {
 
 //Muestra mensajes de texto o archivos (imágenes o enlaces)
 socket.on("nuevoMensaje", (mensaje) => {
-    const mensajesDiv = document.getElementById('mensajes');
-    const div = document.createElement('div');
-    div.className = 'mb-2';
+  const mensajesDiv = document.getElementById('mensajes');
+  const div = document.createElement('div');
+  div.className = 'mb-2';
 
-    const sender = mensaje.sender?.nombreUsuario || "Desconocido";
+  const sender = mensaje.sender?.nombreUsuario || "Desconocido";
 
-    //Manejo de archivos adjuntos con archivoUrl
-    if (mensaje.archivoUrl) {
-        const extension = mensaje.archivoUrl.split('.').pop().toLowerCase();
-        if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
-            div.innerHTML = `<strong>${sender}:</strong><br>
-            <img src="${mensaje.archivoUrl}" alt="Imagen" style="max-width:200px; border-radius:5px; margin-top:5px;">`;
-        } else {
-            div.innerHTML = `<strong>${sender}:</strong> 
-            <a href="${mensaje.archivoUrl}" target="_blank">📂 Ver archivo adjunto</a>`;
-        }
-    } 
-    
-    //Manejo de mensajes de texto
-    else if (mensaje.tipo === "texto" && mensaje.contenido.trim() !== "") {
-        div.innerHTML = `<strong>${sender}:</strong> ${mensaje.contenido}`;
+  // Manejo de archivos adjuntos con archivoUrl
+  if (mensaje.archivoUrl) {
+    const extension = mensaje.archivoUrl.split('.').pop().toLowerCase();
+    if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
+      div.innerHTML = `<strong>${sender}:</strong><br>
+      <img src="${mensaje.archivoUrl}" alt="Imagen" style="max-width:200px; border-radius:5px; margin-top:5px;">`;
     } else {
-        console.warn("⚠️ Mensaje recibido sin contenido válido:", mensaje);
-        return;
+      div.innerHTML = `<strong>${sender}:</strong> 
+      <a href="${mensaje.archivoUrl}" target="_blank">📂 Ver archivo adjunto</a>`;
     }
+  } 
+  // Manejo de mensajes de texto
+  else if (mensaje.tipo === "texto" && mensaje.contenido.trim() !== "") {
+    div.innerHTML = `<strong>${sender}:</strong> ${mensaje.contenido}`;
+  } else {
+    console.warn("⚠️ Mensaje recibido sin contenido válido:", mensaje);
+    return;
+  }
 
-    mensajesDiv.appendChild(div);
-    mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
+  mensajesDiv.appendChild(div);
+  mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
 });
- 
+
+
 //Botón para iniciar videollamada
 document.getElementById('startVideoCall').addEventListener('click', () => {
     const urlParams = new URLSearchParams(window.location.search);
