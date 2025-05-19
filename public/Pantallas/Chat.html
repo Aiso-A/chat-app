@@ -116,7 +116,7 @@
         .catch(err => console.error('Error al cargar info del chat:', err));
     }
 
-   function loadMensajes(chatId) {
+    function loadMensajes(chatId) {
   fetch(`/api/mensajes?chatId=${chatId}`)
     .then(res => res.json())
     .then(mensajes => {
@@ -132,13 +132,13 @@
           div.innerHTML += `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto}`;
         }
 
-        // Mostrar imagen si existe
-        if (m.imagen) {
-          div.innerHTML += `<br><img src="${m.imagen}" alt="Imagen enviada" style="max-width: 200px; border-radius: 5px;">`;
+        // Mostrar imagen si existe, asegurando la ruta correcta
+        if (m.archivo && m.archivo.includes('/uploads/')) {
+          div.innerHTML += `<br><img src="${m.archivo}" alt="Imagen enviada" style="max-width: 200px; border-radius: 5px;">`;
         }
 
-        // Mostrar archivos con enlace de descarga
-        if (m.archivo) {
+        // Mostrar archivos descargables si no son imágenes
+        else if (m.archivo) {
           div.innerHTML += `<br><a href="${m.archivo}" target="_blank">📄 Descargar archivo adjunto</a>`;
         }
 

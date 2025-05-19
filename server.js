@@ -16,7 +16,6 @@ const Usuario = require('./models/Usuarios');
 const Chat = require('./models/Chat');
 const Mensaje = require('./models/Mensaje');
 
-
 const simpleEncryptor = require('simple-encryptor');
 const secretKey = process.env.ENCRYPTION_KEY || 'default_secret_key';
 const encryptor = simpleEncryptor(secretKey);
@@ -37,39 +36,40 @@ const io = socketIO(server);
 const PORT = process.env.PORT || 3000;
 const uri = process.env.MONGO_URI;
 
-// Verificar si la carpeta uploads/ existe, si no, crearla
+// ✅ Verificar si la carpeta uploads/ existe, si no, crearla con permisos adecuados
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
+  fs.mkdirSync(uploadsDir, { recursive: true, mode: 0o755 });
   console.log("📂 Carpeta 'uploads/' creada automáticamente.");
+} else {
+  console.log("✅ Carpeta 'uploads/' ya existe.");
 }
 
-// Servir archivos desde la carpeta uploads/
-app.use('/uploads', express.static(uploadsDir));
+// ✅ Servir archivos estáticos desde la carpeta uploads/
+app.use('/uploads', express.static(uploadsDir, { index: false }));
 
-// Configuración de Multer para subir imágenes y archivos
+// ✅ Configuración de Multer para subir imágenes y archivos
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); 
+    cb(null, uploadsDir); // Guarda los archivos en la carpeta 'uploads/'
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname); 
+    cb(null, Date.now() + '-' + file.originalname); // Nombre único para cada archivo
   }
 });
 
-//Filtro para tipos de archivos permitidos
+// ✅ Filtro para tipos de archivos permitidos
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf', 'application/msword'];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Tipo de archivo no permitido'), false);
+    cb(new Error('❌ Tipo de archivo no permitido'), false);
   }
 };
 
-//Inicializar Multer con la configuración
+// ✅ Inicializar Multer con la configuración
 const upload = multer({ storage: storage, fileFilter: fileFilter });
-
 
 // Conectar a MongoDB
 mongoose.connect(uri)
@@ -91,16 +91,14 @@ app.use(session({
     mongoUrl: process.env.MONGO_URI,
   }),
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24,
+    maxAge: 1000 * 60 * 60 * 24, // 24 horas
     sameSite: 'lax',
     secure: false,
-    path: '/' 
+    path: '/'
   }
 }));
 
-
 ///////Endpoints///////
-
 
 // Obtener lista de usuarios
 app.get('/api/usuarios', async (req, res) => {
