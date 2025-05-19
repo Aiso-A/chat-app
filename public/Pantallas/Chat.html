@@ -210,6 +210,7 @@ async function enviarArchivo() {
         chatId: chatId
     });
 
+    
 //Ahora también envía el archivo al servidor para guardarlo
 await fetch("/api/enviar-mensaje", {
     method: "POST",
