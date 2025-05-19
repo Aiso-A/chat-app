@@ -203,12 +203,13 @@ app.post('/api/enviar-mensaje', async (req, res) => {
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
   const { chatId, texto, cifrado, archivoUrl } = req.body;
   try {
+   
     const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
 
     const mensajeData = {
       chat: chatId,
       sender: req.session.usuario._id,
-      cifrado: cifrado, // (si agregas esta bandera en el modelo)
+      cifrado: cifrado, 
       archivoUrl: archivoUrl || null
     };
 
@@ -220,19 +221,19 @@ app.post('/api/enviar-mensaje', async (req, res) => {
     await nuevoMensaje.save();
     const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
 
-    // Registro en consola para depuración
+    
     if (archivoUrl) {
       console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario} envió un archivo: ${archivoUrl}`);
     } else {
-      // Desencriptamos para mostrar el mensaje plano en los logs
-      const textoPlano = cifrado ? decryptMessage(mensajeTexto) : mensajeTexto;
-      console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${textoPlano}`);
+     
+      console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${mensajeTexto}`);
     }
 
-    // Para emisión en tiempo real envía un objeto estructurado
+    
     io.to(chatId).emit('nuevoMensaje', {
       ...mensajeConInfo._doc,
       tipo: archivoUrl ? "archivo" : "texto",
+      
       contenido: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto,
       archivoUrl: archivoUrl
     });
@@ -245,8 +246,7 @@ app.post('/api/enviar-mensaje', async (req, res) => {
 
 
 
-// Obtener información de un chat (para header)
-// Para chats individuales, devuelve datos del otro usuario; para grupales, el nombre del grupo.
+
 app.get('/api/chat-info', async (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ error: 'No autenticado' });
@@ -308,7 +308,7 @@ const usuariosConectados = new Map();
 io.on('connection', (socket) => {
   console.log('🟢 Un usuario se conectó');
 
-  // Permitir que un socket se una a una sala específica (para recibir mensajes de un chat)
+  // Permitir que un socket se una a una sala específica 
   socket.on('joinRoom', (chatId) => {
     socket.join(chatId);
     console.log(`Socket ${socket.id} se unió a la sala ${chatId}`);
