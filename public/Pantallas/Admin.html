@@ -56,80 +56,115 @@
   </div>
 
   <script>
-    // Se obtiene el usuario actual; si no existe, redirige al login.
-    fetch('/api/usuario-actual')
-      .then(res => res.json())
-      .then(data => {
+    // Función para obtener el usuario actual y actualizar el sidebar
+    async function fetchUsuario() {
+      try {
+        const res = await fetch('/api/usuario-actual');
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText);
+        }
+        const data = await res.json();
         if (!data || !data._id) {
           window.location.href = "/LogIn.html";
           return;
         }
-        // Actualiza el sidebar con el nombre del usuario
         document.getElementById('username').textContent = data.nombreUsuario;
-      })
-      .catch(err => {
-        console.error('Error al obtener el usuario:', err);
+      } catch (error) {
+        console.error('Error al obtener el usuario:', error);
         window.location.href = "/LogIn.html";
-      });
-      
+      }
+    }
+    fetchUsuario();
+
+    // Mostrar modal de nueva tarea
     document.getElementById('btnNuevaTarea').addEventListener('click', function() {
       document.getElementById('modalTarea').style.display = 'block';
     });
 
+    // Ocultar modal
     document.getElementById('cerrarModal').addEventListener('click', function() {
       document.getElementById('modalTarea').style.display = 'none';
     });
 
+    // Guardar tarea: hace fetch POST, limpia campos y vuelve a cargar tareas
     document.getElementById('guardarTarea').addEventListener('click', async function() {
-      let titulo = document.getElementById('tituloTarea').value;
-      let fecha = document.getElementById('fechaLimite').value;
-
+      const titulo = document.getElementById('tituloTarea').value;
+      const fecha = document.getElementById('fechaLimite').value;
       if (titulo && fecha) {
-        await fetch("/api/tareas", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ descripcion: titulo, fechaVencimiento: fecha })
-        });
-
-        document.getElementById('modalTarea').style.display = 'none';
-        cargarTareas();
+        try {
+          const res = await fetch("/api/tareas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ descripcion: titulo, fechaVencimiento: fecha })
+          });
+          if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(errorText);
+          }
+          // Cerrar modal y limpiar inputs
+          document.getElementById('modalTarea').style.display = 'none';
+          document.getElementById('tituloTarea').value = '';
+          document.getElementById('fechaLimite').value = '';
+          cargarTareas(); // Recargar la lista de tareas
+        } catch (error) {
+          console.error("Error al crear tarea:", error);
+        }
       }
     });
 
+    // Función para cargar y mostrar las tareas
     async function cargarTareas() {
-      const res = await fetch("/api/tareas");
-      const tareas = await res.json();
-      const pendientes = document.getElementById("tareasPendientes");
-      const completadas = document.getElementById("tareasCompletadas");
-      pendientes.innerHTML = "";
-      completadas.innerHTML = "";
-
-      tareas.forEach(t => {
-        const ahora = new Date();
-        const esVencida = new Date(t.fechaVencimiento) < ahora;
-
-        const li = document.createElement("li");
-        li.innerHTML = `${t.descripcion} (${new Date(t.fechaVencimiento).toLocaleDateString()})`;
-
-        if (t.completada) {
-          li.classList.add("completed");
-          completadas.appendChild(li);
-        } else if (esVencida) {
-          li.classList.add("vencida");
-          li.innerHTML += " ⚠️ (Tarea vencida)";
-          pendientes.appendChild(li);
-        } else {
-          li.innerHTML += `<button onclick="completarTarea('${t._id}')">✔</button>`;
-          pendientes.appendChild(li);
+      try {
+        const res = await fetch("/api/tareas");
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText);
         }
-      });
+        const tareas = await res.json();
+        const pendientes = document.getElementById("tareasPendientes");
+        const completadas = document.getElementById("tareasCompletadas");
+        pendientes.innerHTML = "";
+        completadas.innerHTML = "";
+
+        tareas.forEach(t => {
+          const ahora = new Date();
+          const esVencida = new Date(t.fechaVencimiento) < ahora;
+          const li = document.createElement("li");
+          li.innerHTML = `${t.descripcion} (${new Date(t.fechaVencimiento).toLocaleDateString()})`;
+
+          if (t.completada) {
+            li.classList.add("completed");
+            completadas.appendChild(li);
+          } else if (esVencida) {
+            li.classList.add("vencida");
+            li.innerHTML += " ⚠️ (Tarea vencida)";
+            pendientes.appendChild(li);
+          } else {
+            li.innerHTML += `<button onclick="completarTarea('${t._id}')">✔</button>`;
+            pendientes.appendChild(li);
+          }
+        });
+      } catch(error) {
+        console.error("Error al cargar tareas:", error);
+      }
     }
 
+    // Función para completar una tarea
     async function completarTarea(id) {
-      await fetch(`/api/tareas/${id}`, { method: "PUT" });
-      cargarTareas();
+      try {
+        const res = await fetch(`/api/tareas/${id}`, { method: "PUT" });
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText);
+        }
+        cargarTareas();
+      } catch(error) {
+        console.error("Error al completar tarea:", error);
+      }
     }
 
+    // Inicializar la carga de tareas
     cargarTareas();
   </script>
 </body>

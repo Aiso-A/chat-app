@@ -47,6 +47,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+app.set('trust proxy', 1);
+
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -57,7 +59,7 @@ app.use(session({
   cookie: {
     maxAge: 1000 * 60 * 60 * 24,
     sameSite: 'lax',
-    secure: false,
+     secure: process.env.NODE_ENV === 'production',
     path: '/' 
   }
 }));
