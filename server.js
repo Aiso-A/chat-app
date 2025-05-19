@@ -201,7 +201,7 @@ app.post('/api/chats/grupo', async (req, res) => {
 // Enviar mensaje en un chat
 app.post('/api/enviar-mensaje', async (req, res) => {
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-  const { chatId, texto, cifrado } = req.body; // Recibimos la bandera de cifrado desde el cliente
+  const { chatId, texto, cifrado, archivoUrl } = req.body; // Recibimos la bandera de cifrado desde el cliente
   try {
     // Si se solicita cifrado, usa encryptMessage; de lo contrario, el mensaje en claro
     const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
@@ -210,7 +210,8 @@ app.post('/api/enviar-mensaje', async (req, res) => {
       chat: chatId,
       sender: req.session.usuario._id,
       texto: mensajeTexto,
-      cifrado
+      cifrado,
+      archivoUrl: archivoUrl || null //Para guardar archivos
     });
 
     await nuevoMensaje.save();
@@ -221,7 +222,8 @@ app.post('/api/enviar-mensaje', async (req, res) => {
     // Emitir mensaje: si fue cifrado, descifrarlo para mostrarlo en el cliente
     io.to(chatId).emit('nuevoMensaje', {
       ...mensajeConInfo._doc,
-      texto: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto
+      texto: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto,
+      archivoUrl: archivoUrl  //Emitimos también la URL del archivo
     });
     res.json(mensajeConInfo);
   } catch (error) {
@@ -229,7 +231,6 @@ app.post('/api/enviar-mensaje', async (req, res) => {
     res.status(500).json({ error: 'Error al enviar mensaje' });
   }
 });
-
 
 // Obtener información de un chat (para header)
 // Para chats individuales, devuelve datos del otro usuario; para grupales, el nombre del grupo.

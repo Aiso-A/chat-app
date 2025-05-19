@@ -204,6 +204,19 @@ async function enviarArchivo() {
         chatId: chatId
     });
 
+//Ahora también envía el archivo al servidor para guardarlo
+await fetch("/api/enviar-mensaje", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        chatId: chatId,
+        texto: "", //Mensaje vacío porque es un archivo
+        archivoUrl: urlArchivo
+    })
+});
+
     console.log("📂 Archivo subido:", urlArchivo);
 }
 
@@ -215,16 +228,20 @@ socket.on("nuevoMensaje", (mensaje) => {
 
     const sender = mensaje.sender?.nombreUsuario || "Desconocido";
 
-    if (mensaje.tipo === "archivo") {
-        const extension = mensaje.contenido.split('.').pop().toLowerCase();
+    //Manejo de archivos adjuntos con archivoUrl
+    if (mensaje.archivoUrl) {
+        const extension = mensaje.archivoUrl.split('.').pop().toLowerCase();
         if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
             div.innerHTML = `<strong>${sender}:</strong><br>
-            <img src="${mensaje.contenido}" alt="Imagen" style="max-width:200px; border-radius:5px; margin-top:5px;">`;
+            <img src="${mensaje.archivoUrl}" alt="Imagen" style="max-width:200px; border-radius:5px; margin-top:5px;">`;
         } else {
             div.innerHTML = `<strong>${sender}:</strong> 
-            <a href="${mensaje.contenido}" target="_blank">📂 Ver archivo adjunto</a>`;
+            <a href="${mensaje.archivoUrl}" target="_blank">📂 Ver archivo adjunto</a>`;
         }
-    } else if (mensaje.tipo === "texto" && mensaje.contenido.trim() !== "") {
+    } 
+    
+    //Manejo de mensajes de texto
+    else if (mensaje.tipo === "texto" && mensaje.contenido.trim() !== "") {
         div.innerHTML = `<strong>${sender}:</strong> ${mensaje.contenido}`;
     } else {
         console.warn("⚠ Mensaje recibido sin contenido válido:", mensaje);
@@ -234,7 +251,6 @@ socket.on("nuevoMensaje", (mensaje) => {
     mensajesDiv.appendChild(div);
     mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
 });
-
 
 //Botón para iniciar videollamada
 document.getElementById('startVideoCall').addEventListener('click', () => {
