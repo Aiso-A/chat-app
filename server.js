@@ -201,37 +201,35 @@ app.post('/api/chats/grupo', async (req, res) => {
 // Enviar mensaje en un chat
 app.post('/api/enviar-mensaje', async (req, res) => {
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-  const { chatId, texto, cifrado, archivoUrl } = req.body; // Recibimos la bandera de cifrado desde el cliente
+  const { chatId, texto, cifrado, archivoUrl } = req.body;
   try {
     // Si se solicita cifrado, usa encryptMessage; de lo contrario, el mensaje en claro
     const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
 
     const mensajeData = {
-  chat: chatId,
-  sender: req.session.usuario._id,
-  cifrado,
-  archivoUrl: archivoUrl || null
-};
+      chat: chatId,
+      sender: req.session.usuario._id,
+      cifrado: cifrado, // Guarda la bandera
+      archivoUrl: archivoUrl || null
+    };
 
-if (mensajeTexto && mensajeTexto.trim() !== "") {
-  mensajeData.texto = mensajeTexto;
-}
+    if (mensajeTexto && mensajeTexto.trim() !== "") {
+      mensajeData.texto = mensajeTexto;
+    }
 
-const nuevoMensaje = new Mensaje(mensajeData);
-
+    const nuevoMensaje = new Mensaje(mensajeData);
     await nuevoMensaje.save();
+    
+    // Para emisión en tiempo real, ya desencriptas si es necesario:
     const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
-
-    console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${mensajeTexto}`);
-
-    // Emitir mensaje: si fue cifrado, descifrarlo para mostrarlo en el cliente
-     io.to(chatId).emit('nuevoMensaje', {
-    ...mensajeConInfo._doc,
-    tipo: archivoUrl ? "archivo" : "texto",
-    contenido: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto,
-   archivoUrl: archivoUrl
+    io.to(chatId).emit('nuevoMensaje', {
+      ...mensajeConInfo._doc,
+      // Aquí se envía el mensaje desencriptado para la emisión en tiempo real.
+      contenido: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto,
+      tipo: archivoUrl ? "archivo" : "texto",
+      archivoUrl: archivoUrl
     });
-
+    
     res.json(mensajeConInfo);
   } catch (error) {
     console.error(error);
@@ -277,13 +275,23 @@ app.get('/api/mensajes', async (req, res) => {
   try {
     const mensajes = await Mensaje.find({ chat: chatId })
       .populate('sender', 'nombreUsuario')
-      .sort({ fecha: 1 }); // Orden ascendente (los mensajes se muestran desde el más antiguo al más reciente)
-    res.json(mensajes);
+      .sort({ fecha: 1 }); // Orden ascendente
+
+    const mensajesFormateados = mensajes.map(mensaje => {
+      const m = mensaje.toObject();
+      if (m.cifrado && typeof m.texto === 'string' && m.texto.trim() !== "") {
+        m.texto = decryptMessage(m.texto);
+      }
+      return m;
+    });
+
+    res.json(mensajesFormateados);
   } catch (error) {
     console.error('Error al cargar mensajes:', error);
     res.status(500).json({ error: 'Error interno al obtener los mensajes' });
   }
 });
+
 
 
 //Socket.io//
