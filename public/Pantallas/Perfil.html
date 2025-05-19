@@ -6,24 +6,27 @@
   <title>ByteTalk - Perfil</title>
   <link rel="stylesheet" href="/Perfil.css">
   <link rel="stylesheet" href="/Sidebar.css">
+  <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&display=swap" rel="stylesheet">
 </head>
 <body>
 
-  <!-- Menú lateral -->
-  <nav class="sidebar d-flex flex-column p-3">
-    <h2 class="app-title text-center">ByteTalk</h2>
-    <ul class="nav flex-column">
-      <li class="nav-item"><a href="/Pantallas/Chats.html" class="nav-link">Volver a Chats</a></li>
-      <li class="nav-item"><a href="/Pantallas/Perfil.html" class="nav-link">Perfil</a></li>
-      <li class="nav-item"><a href="/Pantallas/Admin.html" class="nav-link">Tareas</a></li>
-      <li class="nav-item"><a href="/LogIn.html" class="nav-link">Cerrar sesión</a></li>
+  <!-- Menú lateral modificado -->
+  <nav class="sidebar">
+    <h2 class="app-title" style="font-family: 'Saira Stencil One', cursive;">ByteTalk</h2>
+    <ul>
+      <li><a href="/Pantallas/Chats.html">Volver a chats</a></li>
+      <li><a href="/Pantallas/Perfil.html">Perfil</a></li>
+      <li><a href="/Pantallas/Admin.html">Tareas</a></li>
+      <li><a href="/LogIn.html">Cerrar sesión</a></li>
     </ul>
+    <!-- Se muestra el usuario conectado -->
+    <p id="username" class="text-light mt-3 ms-3"></p>
   </nav>
 
   <div class="container profile-container">
     <div class="profile-header text-center">
-      <img id="avatar" class="profile-avatar">
-      <h2 id="username"></h2>
+      <img id="avatar" class="profile-avatar" src="/img/default-avatar.png" alt="Avatar">
+      <h2 id="usernamePerfil"></h2>
       <p id="progress-text"></p>
     </div>
 
@@ -53,14 +56,21 @@
       const res = await fetch('/api/usuario-actual');
       const usuario = await res.json();
 
-      document.getElementById("avatar").src = usuario.avatar;
-      document.getElementById("username").innerText = usuario.nombreUsuario;
-
-      // Asegurarse de que tareasCompletadas sea un número
+      if (!usuario || !usuario._id) {
+        window.location.href = "/LogIn.html";
+        return;
+      }
+      
+      // Actualiza el sidebar
+      document.getElementById("username").textContent = usuario.nombreUsuario;
+      
+      // Actualiza la sección de perfil
+      document.getElementById("avatar").src = usuario.avatar || "/img/default-avatar.png";
+      document.getElementById("usernamePerfil").innerText = usuario.nombreUsuario;
+      
       const tareasCompletadas = Number(usuario.tareasCompletadas) || 0;
       const progreso = tareasCompletadas % 5;
       const tareasRestantes = 5 - progreso;
-
       document.getElementById("progress-text").innerText = `Te faltan ${tareasRestantes} tareas para el siguiente nivel`;
       document.getElementById("progress-bar").style.width = `${(progreso / 5) * 100}%`;
 

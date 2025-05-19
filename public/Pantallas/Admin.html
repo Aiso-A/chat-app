@@ -10,15 +10,17 @@
 </head>
 <body>
 
-  <!-- Menú lateral -->
-  <nav class="sidebar d-flex flex-column p-3">
-    <h2 class="app-title text-center">ByteTalk</h2>
-    <ul class="nav flex-column">
-      <li class="nav-item"><a href="/Pantallas/Chats.html" class="nav-link">Volver a Chats</a></li>
-      <li class="nav-item"><a href="/Pantallas/Perfil.html" class="nav-link">Perfil</a></li>
-      <li class="nav-item"><a href="/Pantallas/Admin.html" class="nav-link">Tareas</a></li>
-      <li class="nav-item"><a href="/LogIn.html" class="nav-link">Cerrar sesión</a></li>
+  <!-- Menú lateral modificado -->
+  <nav class="sidebar">
+    <h2 class="app-title" style="font-family: 'Saira Stencil One', cursive;">ByteTalk</h2>
+    <ul>
+      <li><a href="/Pantallas/Chats.html">Volver a chats</a></li>
+      <li><a href="/Pantallas/Perfil.html">Perfil</a></li>
+      <li><a href="/Pantallas/Admin.html">Tareas</a></li>
+      <li><a href="/LogIn.html">Cerrar sesión</a></li>
     </ul>
+    <!-- Se muestra el nombre del usuario conectado -->
+    <p id="username" class="text-light mt-3 ms-3"></p>
   </nav>
 
   <div class="main-content">
@@ -54,6 +56,22 @@
   </div>
 
   <script>
+    // Se obtiene el usuario actual; si no existe, redirige al login.
+    fetch('/api/usuario-actual')
+      .then(res => res.json())
+      .then(data => {
+        if (!data || !data._id) {
+          window.location.href = "/LogIn.html";
+          return;
+        }
+        // Actualiza el sidebar con el nombre del usuario
+        document.getElementById('username').textContent = data.nombreUsuario;
+      })
+      .catch(err => {
+        console.error('Error al obtener el usuario:', err);
+        window.location.href = "/LogIn.html";
+      });
+      
     document.getElementById('btnNuevaTarea').addEventListener('click', function() {
       document.getElementById('modalTarea').style.display = 'block';
     });
