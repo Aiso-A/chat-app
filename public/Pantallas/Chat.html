@@ -121,23 +121,39 @@
         .catch(err => console.error('Error al cargar info del chat:', err));
     }
 
-    function loadMensajes(chatId) {
-      fetch(`/api/mensajes?chatId=${chatId}`)
-        .then(res => res.json())
-        .then(mensajes => {
-          console.log("📩 Mensajes recibidos:", mensajes);
-          const mensajesDiv = document.getElementById('mensajes');
-          mensajesDiv.innerHTML = '';
-          mensajes.forEach(m => {
-            const div = document.createElement('div');
-            div.className = 'mb-2';
-            div.innerHTML = `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto}`;
-            mensajesDiv.appendChild(div);
-          });
-          mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
-        })
-        .catch(err => console.error('Error al cargar mensajes:', err));
-    }
+ function loadMensajes(chatId) {
+  fetch(`/api/mensajes?chatId=${chatId}`)
+    .then(res => res.json())
+    .then(mensajes => {
+      console.log("📩 Mensajes recibidos:", mensajes);
+      const mensajesDiv = document.getElementById('mensajes');
+      mensajesDiv.innerHTML = '';
+      
+      mensajes.forEach(m => {
+        let mensajeHTML = `<strong>${m.sender.nombreUsuario}:</strong> `;
+     
+        if (m.archivoUrl) {
+          // Verificamos si el archivo es una imagen
+          const extension = m.archivoUrl.split('.').pop().toLowerCase();
+          if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
+            mensajeHTML += `<br><img src="${m.archivoUrl}" alt="Imagen" style="max-width:200px; border-radius:5px; margin-top:5px;">`;
+          } else {
+            mensajeHTML += `<a href="${m.archivoUrl}" target="_blank">📂 Ver archivo adjunto</a>`;
+          }
+        } else if (m.texto && m.texto.trim() !== "") {
+          mensajeHTML += m.texto;
+        }
+     
+        const div = document.createElement('div');
+        div.className = 'mb-2';
+        div.innerHTML = mensajeHTML;
+        mensajesDiv.appendChild(div);
+      });
+      mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
+    })
+    .catch(err => console.error('Error al cargar mensajes:', err));
+}
+
 
     // 🔒 Cifrado opcional
     let cifradoActivo = false;
