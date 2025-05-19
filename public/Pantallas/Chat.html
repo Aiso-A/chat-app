@@ -121,7 +121,7 @@
         .catch(err => console.error('Error al cargar info del chat:', err));
     }
 
-    function loadMensajes(chatId) {
+  function loadMensajes(chatId) {
   fetch(`/api/mensajes?chatId=${chatId}`)
     .then(res => res.json())
     .then(mensajes => {
@@ -132,8 +132,6 @@
       mensajes.forEach(m => {
         const div = document.createElement('div');
         div.className = 'mb-2';
-        
-        //Mantener la visualización del texto del mensaje
         div.innerHTML = `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto || ""}`;
 
         //Manejo de archivos adjuntos
@@ -141,14 +139,12 @@
           const extension = m.archivoUrl.split('.').pop().toLowerCase();
           
           if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
-            //Si es una imagen, la muestra directamente en el chat
             const imgElemento = document.createElement('img');
             imgElemento.src = m.archivoUrl;
             imgElemento.alt = "Imagen adjunta";
             imgElemento.style = "max-width:200px; border-radius:5px; margin-top:5px;";
             div.appendChild(imgElemento);
           } else {
-            //Si es otro tipo de archivo, agrega un enlace de descarga
             div.innerHTML += `<br><a href="${m.archivoUrl}" target="_blank">📂 Ver archivo adjunto</a>`;
           }
         }
@@ -243,32 +239,29 @@ await fetch("/api/enviar-mensaje", {
     console.log("📂 Archivo subido:", urlArchivo);
 }
 
-//Muestra mensajes de texto o archivos (imágenes o enlaces)
+// Muestra mensajes de texto o archivos (imágenes o enlaces)
 socket.on("nuevoMensaje", (mensaje) => {
     const mensajesDiv = document.getElementById('mensajes');
     const div = document.createElement('div');
     div.className = 'mb-2';
-
+    
     const sender = mensaje.sender?.nombreUsuario || "Desconocido";
+    
+    //Mostrar texto del mensaje
+    div.innerHTML = `<strong>${sender}:</strong> ${mensaje.texto || ""}`;
 
-    //Manejo de archivos adjuntos con archivoUrl
+    //Manejo de archivos adjuntos
     if (mensaje.archivoUrl) {
         const extension = mensaje.archivoUrl.split('.').pop().toLowerCase();
         if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
-            div.innerHTML = `<strong>${sender}:</strong><br>
-            <img src="${mensaje.archivoUrl}" alt="Imagen" style="max-width:200px; border-radius:5px; margin-top:5px;">`;
+            const imgElemento = document.createElement('img');
+            imgElemento.src = mensaje.archivoUrl;
+            imgElemento.alt = "Imagen adjunta";
+            imgElemento.style = "max-width:200px; border-radius:5px; margin-top:5px;";
+            div.appendChild(imgElemento);
         } else {
-            div.innerHTML = `<strong>${sender}:</strong> 
-            <a href="${mensaje.archivoUrl}" target="_blank">📂 Ver archivo adjunto</a>`;
+            div.innerHTML += `<br><a href="${mensaje.archivoUrl}" target="_blank">📂 Ver archivo adjunto</a>`;
         }
-    } 
-    
-    //Manejo de mensajes de texto
-    else if (mensaje.tipo === "texto" && mensaje.contenido.trim() !== "") {
-        div.innerHTML = `<strong>${sender}:</strong> ${mensaje.contenido}`;
-    } else {
-        console.warn("⚠️ Mensaje recibido sin contenido válido:", mensaje);
-        return;
     }
 
     mensajesDiv.appendChild(div);
