@@ -165,11 +165,10 @@
   document.getElementById('mensaje').value = '';
 });
 
-
 //Configuración de Supabase
 const supabaseUrl = 'https://ohatguqavmiiytptetmy.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9oYXRndXFhdm1paXl0cHRldG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NjE0NjcsImV4cCI6MjA2MzEzNzQ2N30.jeBEQmxvW0lBGcaOVlDTXraEHAFMEngyC2vyeLxqwtg';
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 async function enviarArchivo() {
     const archivo = document.getElementById("file-input").files[0];
@@ -177,7 +176,7 @@ async function enviarArchivo() {
 
     const nombreArchivo = `${Date.now()}_${archivo.name}`;
 
-    const { data, error } = await supabase.storage
+    const { data, error } = await supabaseClient.storage
         .from('chat-archivos')
         .upload(nombreArchivo, archivo, {
             cacheControl: '3600',
@@ -189,7 +188,7 @@ async function enviarArchivo() {
         return;
     }
 
-    const { data: publicUrlData } = supabase
+    const { data: publicUrlData } = supabaseClient
         .storage
         .from('chat-archivos')
         .getPublicUrl(nombreArchivo);
@@ -228,13 +227,14 @@ socket.on("nuevoMensaje", (mensaje) => {
     } else if (mensaje.tipo === "texto" && mensaje.contenido.trim() !== "") {
         div.innerHTML = `<strong>${sender}:</strong> ${mensaje.contenido}`;
     } else {
-        console.warn("⚠️ Mensaje recibido sin contenido válido:", mensaje);
+        console.warn("⚠ Mensaje recibido sin contenido válido:", mensaje);
         return;
     }
 
     mensajesDiv.appendChild(div);
     mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
 });
+
 
 //Botón para iniciar videollamada
 document.getElementById('startVideoCall').addEventListener('click', () => {
