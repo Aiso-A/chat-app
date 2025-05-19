@@ -198,11 +198,15 @@ async function enviarArchivo() {
     const urlParams = new URLSearchParams(window.location.search);
     const chatId = urlParams.get('id');
 
-    socket.emit("mensaje", {
-        tipo: "archivo",
-        contenido: urlArchivo,
-        chatId: chatId
-    });
+  await fetch('/api/enviar-mensaje', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    chatId,
+    tipo: "archivo",
+    contenido: urlArchivo
+  })
+});
 
     console.log("📂 Archivo subido:", urlArchivo);
 }

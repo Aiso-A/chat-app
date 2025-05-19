@@ -199,37 +199,62 @@ app.post('/api/chats/grupo', async (req, res) => {
 });
 
 // Enviar mensaje en un chat
+// Enviar mensaje en un chat (texto o archivo)
 app.post('/api/enviar-mensaje', async (req, res) => {
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-  const { chatId, texto, cifrado } = req.body; // Recibimos la bandera de cifrado desde el cliente
+
+  const { chatId, texto, cifrado, tipo = "texto", contenido } = req.body;
+
   try {
-    // Si se solicita cifrado, usa encryptMessage; de lo contrario, el mensaje en claro
-    const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
+    let mensajeData;
 
-    const nuevoMensaje = new Mensaje({
-      chat: chatId,
-      sender: req.session.usuario._id,
-      texto: mensajeTexto,
-      cifrado
-    });
+    if (tipo === "archivo") {
+      // Mensaje tipo archivo
+      mensajeData = {
+        chat: chatId,
+        sender: req.session.usuario._id,
+        tipo: "archivo",
+        contenido
+      };
+    } else {
+      // Mensaje tipo texto (cifrado o no)
+      const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
+      mensajeData = {
+        chat: chatId,
+        sender: req.session.usuario._id,
+        texto: mensajeTexto,
+        cifrado,
+        tipo: "texto"
+      };
+    }
 
+    // Guardar mensaje
+    const nuevoMensaje = new Mensaje(mensajeData);
     await nuevoMensaje.save();
+
     const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
 
-    console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${mensajeTexto}`);
+    // Mostrar en consola
+    if (tipo === "archivo") {
+      console.log(`📁 Archivo enviado por ${mensajeConInfo.sender.nombreUsuario}: ${contenido}`);
+    } else {
+      console.log(`💬 Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${cifrado ? decryptMessage(mensajeConInfo.texto) : mensajeConInfo.texto}`);
+    }
 
-    // Emitir mensaje: si fue cifrado, descifrarlo para mostrarlo en el cliente
-    io.to(chatId).emit('nuevoMensaje', {
+    // Emitir al frontend
+    io.to(chatId).emit("nuevoMensaje", {
       ...mensajeConInfo._doc,
-      texto: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto
+      texto: tipo === "archivo" ? undefined : (cifrado ? decryptMessage(mensajeConInfo.texto) : mensajeConInfo.texto),
+      contenido
     });
+
     res.json(mensajeConInfo);
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al enviar mensaje' });
   }
 });
-
 
 // Obtener información de un chat (para header)
 // Para chats individuales, devuelve datos del otro usuario; para grupales, el nombre del grupo.
