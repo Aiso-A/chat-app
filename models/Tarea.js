@@ -7,3 +7,5 @@ const tareaSchema = new mongoose.Schema({
     fechaCreacion: { type: Date, default: Date.now },
     fechaVencimiento: { type: Date, required: true }
 });
+
+module.exports = mongoose.model('Tarea', tareaSchema);
