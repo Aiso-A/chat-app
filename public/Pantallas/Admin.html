@@ -115,54 +115,46 @@
 
     // Función para cargar y mostrar las tareas
     async function cargarTareas() {
-      try {
-        const res = await fetch("/api/tareas");
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(errorText);
-        }
-        const tareas = await res.json();
-        const pendientes = document.getElementById("tareasPendientes");
-        const completadas = document.getElementById("tareasCompletadas");
-        pendientes.innerHTML = "";
-        completadas.innerHTML = "";
+  try {
+    const res = await fetch("/api/tareas");
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText);
+    }
+    const tareas = await res.json();
+    const pendientes = document.getElementById("tareasPendientes");
+    const completadas = document.getElementById("tareasCompletadas");
+    pendientes.innerHTML = "";
+    completadas.innerHTML = "";
 
-        tareas.forEach(t => {
-          const ahora = new Date();
-          const esVencida = new Date(t.fechaVencimiento) < ahora;
-          const li = document.createElement("li");
-          li.innerHTML = `${t.descripcion} (${new Date(t.fechaVencimiento).toLocaleDateString()})`;
-
-          if (t.completada) {
-            li.classList.add("completed");
-            completadas.appendChild(li);
-          } else if (esVencida) {
-            li.classList.add("vencida");
-            li.innerHTML += " ⚠️ (Tarea vencida)";
-            pendientes.appendChild(li);
-          } else {
-            li.innerHTML += `<button onclick="completarTarea('${t._id}')">✔</button>`;
-            pendientes.appendChild(li);
-          }
-        });
-      } catch(error) {
-        console.error("Error al cargar tareas:", error);
-      }
+    // Si no hay tareas asignadas, muestra un mensaje en la lista de pendientes
+    if (Array.isArray(tareas) && tareas.length === 0) {
+      pendientes.innerHTML = '<p class="text-muted">No hay tareas asignadas.</p>';
+      return;
     }
 
-    // Función para completar una tarea
-    async function completarTarea(id) {
-      try {
-        const res = await fetch(`/api/tareas/${id}`, { method: "PUT" });
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(errorText);
-        }
-        cargarTareas();
-      } catch(error) {
-        console.error("Error al completar tarea:", error);
+    tareas.forEach(t => {
+      const ahora = new Date();
+      const esVencida = new Date(t.fechaVencimiento) < ahora;
+      const li = document.createElement("li");
+      li.innerHTML = `${t.descripcion} (${new Date(t.fechaVencimiento).toLocaleDateString()})`;
+
+      if (t.completada) {
+        li.classList.add("completed");
+        completadas.appendChild(li);
+      } else if (esVencida) {
+        li.classList.add("vencida");
+        li.innerHTML += " ⚠️ (Tarea vencida)";
+        pendientes.appendChild(li);
+      } else {
+        li.innerHTML += `<button onclick="completarTarea('${t._id}')">✔</button>`;
+        pendientes.appendChild(li);
       }
-    }
+    });
+  } catch(error) {
+    console.error("Error al cargar tareas:", error);
+  }
+}
 
     // Inicializar la carga de tareas
     cargarTareas();

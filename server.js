@@ -303,23 +303,20 @@ app.get('/api/mensajes', async (req, res) => {
 });
 
 //Creación de tareas
-app.post('/api/tareas', async (req, res) => {
-  if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-
-  const { descripcion, fechaVencimiento } = req.body;
+app.get('/api/tareas', async (req, res) => {
+  if (!req.session.usuario) {
+    return res.status(401).json({ error: 'No autenticado' });
+  }
   try {
-    const nuevaTarea = new Tarea({
-      usuario: req.session.usuario._id,
-      descripcion,
-      fechaVencimiento
-    });
-    await nuevaTarea.save();
-    res.json(nuevaTarea);
+    const tareas = await Tarea.find({ usuario: req.session.usuario._id });
+    // Puedes retornar siempre un array. Si no hay tareas, será un array vacío.
+    res.json(tareas);
   } catch (error) {
-    console.error("Error al crear tarea:", error);
-    res.status(500).json({ error: "Error interno" });
+    console.error("Error al obtener tareas:", error);
+    res.status(500).json({ error: 'Error interno al obtener tareas' });
   }
 });
+
 
 //Completar tareas
 app.put('/api/tareas/:id', async (req, res) => {
