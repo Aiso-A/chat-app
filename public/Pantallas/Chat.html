@@ -156,20 +156,15 @@
   const urlParams = new URLSearchParams(window.location.search);
   const chatId = urlParams.get('id');
 
-  await fetch("/api/enviar-mensaje", {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-        chatId: chatId,
-        texto: "📂 Archivo adjunto", 
-        archivoUrl: urlArchivo
-    })
-});
+  await fetch('/api/enviar-mensaje', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chatId, texto, cifrado: cifradoActivo })
+  });
 
   document.getElementById('mensaje').value = '';
 });
+
 
 //Configuración de Supabase
 const supabaseUrl = 'https://ohatguqavmiiytptetmy.supabase.co';
@@ -210,7 +205,6 @@ async function enviarArchivo() {
         chatId: chatId
     });
 
-    
 //Ahora también envía el archivo al servidor para guardarlo
 await fetch("/api/enviar-mensaje", {
     method: "POST",
@@ -251,14 +245,14 @@ socket.on("nuevoMensaje", (mensaje) => {
     else if (mensaje.tipo === "texto" && mensaje.contenido.trim() !== "") {
         div.innerHTML = `<strong>${sender}:</strong> ${mensaje.contenido}`;
     } else {
-        console.warn("⚠ Mensaje recibido sin contenido válido:", mensaje);
+        console.warn("⚠️ Mensaje recibido sin contenido válido:", mensaje);
         return;
     }
 
     mensajesDiv.appendChild(div);
     mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
 });
-
+ 
 //Botón para iniciar videollamada
 document.getElementById('startVideoCall').addEventListener('click', () => {
     const urlParams = new URLSearchParams(window.location.search);

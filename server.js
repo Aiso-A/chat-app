@@ -206,13 +206,18 @@ app.post('/api/enviar-mensaje', async (req, res) => {
     // Si se solicita cifrado, usa encryptMessage; de lo contrario, el mensaje en claro
     const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
 
-    const nuevoMensaje = new Mensaje({
+    const mensajeData = {
   chat: chatId,
   sender: req.session.usuario._id,
-  texto: mensajeTexto || "",
   cifrado,
-  archivoUrl: archivoUrl || null
-});
+  archivoUrl: archivoUrl || null
+};
+
+if (mensajeTexto && mensajeTexto.trim() !== "") {
+  mensajeData.texto = mensajeTexto;
+}
+
+const nuevoMensaje = new Mensaje(mensajeData);
 
     await nuevoMensaje.save();
     const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
@@ -231,6 +236,7 @@ app.post('/api/enviar-mensaje', async (req, res) => {
     res.status(500).json({ error: 'Error al enviar mensaje' });
   }
 });
+
 
 // Obtener información de un chat (para header)
 // Para chats individuales, devuelve datos del otro usuario; para grupales, el nombre del grupo.
@@ -349,7 +355,6 @@ socket.on('iceCandidate', (data) => {
   socket.to(data.roomId).emit('iceCandidate', data);
 });
 });
-
 
 // Middleware catch-all
 app.use((req, res, next) => {
