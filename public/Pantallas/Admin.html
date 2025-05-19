@@ -1,118 +1,118 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administración de Tareas | ByteTalk</title>
-    <link rel="stylesheet" href="/Sidebar.css">
-    <link rel="stylesheet" href="/Admin.css">
-    <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Exo+2:wght@400;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administración de Tareas | ByteTalk</title>
+  <link rel="stylesheet" href="/Sidebar.css">
+  <link rel="stylesheet" href="/Admin.css">
+  <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Exo+2:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <!-- Menú lateral -->
-    <nav class="sidebar d-flex flex-column p-3">
-        <h2 class="app-title text-center">ByteTalk</h2>
-        <ul class="nav flex-column">
-            <li class="nav-item"><a href="/Pantallas/Chats.html" class="nav-link">Volver a Chats</a></li>
-            <li class="nav-item"><a href="/Pantallas/Perfil.html" class="nav-link">Perfil</a></li>
-            <li class="nav-item"><a href="/Pantallas/Admin.html" class="nav-link">Tareas</a></li>
-            <li class="nav-item"><a href="/LogIn.html" class="nav-link">Cerrar sesión</a></li>
-        </ul>
-    </nav>
+  <!-- Menú lateral -->
+  <nav class="sidebar d-flex flex-column p-3">
+    <h2 class="app-title text-center">ByteTalk</h2>
+    <ul class="nav flex-column">
+      <li class="nav-item"><a href="/Pantallas/Chats.html" class="nav-link">Volver a Chats</a></li>
+      <li class="nav-item"><a href="/Pantallas/Perfil.html" class="nav-link">Perfil</a></li>
+      <li class="nav-item"><a href="/Pantallas/Admin.html" class="nav-link">Tareas</a></li>
+      <li class="nav-item"><a href="/LogIn.html" class="nav-link">Cerrar sesión</a></li>
+    </ul>
+  </nav>
 
-    <div class="main-content">
-        <header>
-            <h1 class="section-title">Administración de Tareas</h1>
-            <button id="btnNuevaTarea">➕ Nueva Tarea</button>
-        </header>
+  <div class="main-content">
+    <header>
+      <h1 class="section-title">Administración de Tareas</h1>
+      <button id="btnNuevaTarea">➕ Nueva Tarea</button>
+    </header>
 
-        <section>
-            <h2 class="sub-title">Tareas Pendientes</h2>
-            <ul id="tareasPendientes" class="task-list"></ul>
-        </section>
+    <section>
+      <h2 class="sub-title">Tareas Pendientes</h2>
+      <ul id="tareasPendientes" class="task-list"></ul>
+    </section>
 
-        <section>
-            <h2 class="sub-title">Tareas Completadas</h2>
-            <ul id="tareasCompletadas" class="task-list"></ul>
-        </section>
+    <section>
+      <h2 class="sub-title">Tareas Completadas</h2>
+      <ul id="tareasCompletadas" class="task-list"></ul>
+    </section>
+  </div>
+
+  <!-- Modal para nueva tarea -->
+  <div id="modalTarea" class="modal">
+    <div class="modal-content">
+      <h4>Agregar Nueva Tarea</h4>
+      <label for="tituloTarea">Título:</label>
+      <input type="text" id="tituloTarea">
+      <label for="fechaLimite">Fecha Límite:</label>
+      <input type="date" id="fechaLimite">
+      <div class="modal-buttons">
+        <button id="guardarTarea">Guardar</button>
+        <button id="cerrarModal">Cerrar</button>
+      </div>
     </div>
+  </div>
 
-    <!-- Modal para nueva tarea -->
-    <div id="modalTarea" class="modal">
-        <div class="modal-content">
-            <h4>Agregar Nueva Tarea</h4>
-            <label for="tituloTarea">Título:</label>
-            <input type="text" id="tituloTarea">
-            <label for="fechaLimite">Fecha Límite:</label>
-            <input type="date" id="fechaLimite">
-            <div class="modal-buttons">
-                <button id="guardarTarea">Guardar</button>
-                <button id="cerrarModal">Cerrar</button>
-            </div>
-        </div>
-    </div>
+  <script>
+    document.getElementById('btnNuevaTarea').addEventListener('click', function() {
+      document.getElementById('modalTarea').style.display = 'block';
+    });
 
-    <script>
-        document.getElementById('btnNuevaTarea').addEventListener('click', function() {
-            document.getElementById('modalTarea').style.display = 'block';
+    document.getElementById('cerrarModal').addEventListener('click', function() {
+      document.getElementById('modalTarea').style.display = 'none';
+    });
+
+    document.getElementById('guardarTarea').addEventListener('click', async function() {
+      let titulo = document.getElementById('tituloTarea').value;
+      let fecha = document.getElementById('fechaLimite').value;
+
+      if (titulo && fecha) {
+        await fetch("/api/tareas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ descripcion: titulo, fechaVencimiento: fecha })
         });
 
-        document.getElementById('cerrarModal').addEventListener('click', function() {
-            document.getElementById('modalTarea').style.display = 'none';
-        });
-
-        document.getElementById('guardarTarea').addEventListener('click', async function() {
-            let titulo = document.getElementById('tituloTarea').value;
-            let fecha = document.getElementById('fechaLimite').value;
-
-            if (titulo && fecha) {
-                await fetch("/api/tareas", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ descripcion: titulo, fechaVencimiento: fecha })
-                });
-
-                document.getElementById('modalTarea').style.display = 'none';
-                cargarTareas();
-            }
-        });
-
-        async function cargarTareas() {
-            const res = await fetch("/api/tareas");
-            const tareas = await res.json();
-            const pendientes = document.getElementById("tareasPendientes");
-            const completadas = document.getElementById("tareasCompletadas");
-            pendientes.innerHTML = "";
-            completadas.innerHTML = "";
-
-            tareas.forEach(t => {
-                const ahora = new Date();
-                const esVencida = new Date(t.fechaVencimiento) < ahora;
-
-                const li = document.createElement("li");
-                li.innerHTML = `${t.descripcion} (${new Date(t.fechaVencimiento).toLocaleDateString()})`;
-
-                if (t.completada) {
-                    li.classList.add("completed");
-                    completadas.appendChild(li);
-                } else if (esVencida) {
-                    li.style.color = "red";
-                    li.innerHTML += " ⚠️ (Tarea vencida)";
-                    pendientes.appendChild(li);
-                } else {
-                    li.innerHTML += `<button onclick="completarTarea('${t._id}')">✔</button>`;
-                    pendientes.appendChild(li);
-                }
-            });
-        }
-
-        async function completarTarea(id) {
-            await fetch(`/api/tareas/${id}`, { method: "PUT" });
-            cargarTareas();
-        }
-
+        document.getElementById('modalTarea').style.display = 'none';
         cargarTareas();
-    </script>
+      }
+    });
+
+    async function cargarTareas() {
+      const res = await fetch("/api/tareas");
+      const tareas = await res.json();
+      const pendientes = document.getElementById("tareasPendientes");
+      const completadas = document.getElementById("tareasCompletadas");
+      pendientes.innerHTML = "";
+      completadas.innerHTML = "";
+
+      tareas.forEach(t => {
+        const ahora = new Date();
+        const esVencida = new Date(t.fechaVencimiento) < ahora;
+
+        const li = document.createElement("li");
+        li.innerHTML = `${t.descripcion} (${new Date(t.fechaVencimiento).toLocaleDateString()})`;
+
+        if (t.completada) {
+          li.classList.add("completed");
+          completadas.appendChild(li);
+        } else if (esVencida) {
+          li.classList.add("vencida");
+          li.innerHTML += " ⚠️ (Tarea vencida)";
+          pendientes.appendChild(li);
+        } else {
+          li.innerHTML += `<button onclick="completarTarea('${t._id}')">✔</button>`;
+          pendientes.appendChild(li);
+        }
+      });
+    }
+
+    async function completarTarea(id) {
+      await fetch(`/api/tareas/${id}`, { method: "PUT" });
+      cargarTareas();
+    }
+
+    cargarTareas();
+  </script>
 </body>
 </html>

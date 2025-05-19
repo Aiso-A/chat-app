@@ -12,6 +12,7 @@ require('dotenv').config();
 const Usuario = require('./models/Usuarios');
 const Chat = require('./models/Chat');
 const Mensaje = require('./models/Mensaje');
+const Tarea = require('./models/Tarea');
 
 // <-- NUEVO: Importar simple-encryptor e inicializarlo
 const simpleEncryptor = require('simple-encryptor');

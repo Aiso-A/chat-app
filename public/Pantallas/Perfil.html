@@ -1,82 +1,85 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ByteTalk - Perfil</title>
-    <link rel="stylesheet" href="/Perfil.css">
-    <link rel="stylesheet" href="/Sidebar.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ByteTalk - Perfil</title>
+  <link rel="stylesheet" href="/Perfil.css">
+  <link rel="stylesheet" href="/Sidebar.css">
 </head>
 <body>
 
-    <!-- Menú lateral -->
-    <nav class="sidebar d-flex flex-column p-3">
-        <h2 class="app-title text-center">ByteTalk</h2>
-        <ul class="nav flex-column">
-            <li class="nav-item"><a href="/Pantallas/Chats.html" class="nav-link">Volver a Chats</a></li>
-            <li class="nav-item"><a href="/Pantallas/Perfil.html" class="nav-link">Perfil</a></li>
-            <li class="nav-item"><a href="/Pantallas/Admin.html" class="nav-link">Tareas</a></li>
-            <li class="nav-item"><a href="/LogIn.html" class="nav-link">Cerrar sesión</a></li>
-        </ul>
-    </nav>
+  <!-- Menú lateral -->
+  <nav class="sidebar d-flex flex-column p-3">
+    <h2 class="app-title text-center">ByteTalk</h2>
+    <ul class="nav flex-column">
+      <li class="nav-item"><a href="/Pantallas/Chats.html" class="nav-link">Volver a Chats</a></li>
+      <li class="nav-item"><a href="/Pantallas/Perfil.html" class="nav-link">Perfil</a></li>
+      <li class="nav-item"><a href="/Pantallas/Admin.html" class="nav-link">Tareas</a></li>
+      <li class="nav-item"><a href="/LogIn.html" class="nav-link">Cerrar sesión</a></li>
+    </ul>
+  </nav>
 
-    <div class="container profile-container">
-        <div class="profile-header text-center">
-            <img id="avatar" class="profile-avatar"> 
-            <h2 id="username"></h2> 
-            <p id="progress-text"></p>
-        </div>
-
-        <!-- Recompensas -->
-        <div class="rewards-section">
-            <h3>🎉 Recompensas</h3>
-            <div class="progress-container">
-                <div class="progress">
-                    <div id="progress-bar" class="progress-bar"></div>
-                </div>
-            </div>
-        </div>
+  <div class="container profile-container">
+    <div class="profile-header text-center">
+      <img id="avatar" class="profile-avatar">
+      <h2 id="username"></h2>
+      <p id="progress-text"></p>
     </div>
 
-    <!-- Modal de Logro -->
-    <div id="logroModal" class="modal">
-        <div class="modal-content">
-            <h2>¡Has desbloqueado un nuevo avatar! 🎉</h2>
-            <p id="logroTexto"></p>
-            <img id="nuevoAvatarLogro" class="avatar-logro">
-            <button onclick="cerrarLogro()">Cerrar</button>
+    <!-- Recompensas -->
+    <div class="rewards-section">
+      <h3>🎉 Recompensas</h3>
+      <div class="progress-container">
+        <div class="progress">
+          <div id="progress-bar" class="progress-bar"></div>
         </div>
+      </div>
     </div>
+  </div>
 
-    <script>
-        async function cargarPerfil() {
-            const res = await fetch('/api/usuario-actual');
-            const usuario = await res.json();
+  <!-- Modal de Logro -->
+  <div id="logroModal" class="modal">
+    <div class="modal-content">
+      <h2>¡Has desbloqueado un nuevo avatar! 🎉</h2>
+      <p id="logroTexto"></p>
+      <img id="nuevoAvatarLogro" class="avatar-logro">
+      <button onclick="cerrarLogro()">Cerrar</button>
+    </div>
+  </div>
 
-            document.getElementById("avatar").src = usuario.avatar;
-            document.getElementById("username").innerText = usuario.nombreUsuario;
-            
-            const progreso = usuario.tareasCompletadas % 5;
-            const tareasRestantes = 5 - progreso;
-            document.getElementById("progress-text").innerText = `Te faltan ${tareasRestantes} tareas para el siguiente nivel`;
-            document.getElementById("progress-bar").style.width = `${(progreso / 5) * 100}%`;
+  <script>
+    async function cargarPerfil() {
+      const res = await fetch('/api/usuario-actual');
+      const usuario = await res.json();
 
-            if (progreso === 0 && usuario.tareasCompletadas > 0) {
-                mostrarLogro(usuario.avatar, usuario.tareasCompletadas);
-            }
-        }
+      document.getElementById("avatar").src = usuario.avatar;
+      document.getElementById("username").innerText = usuario.nombreUsuario;
 
-        function mostrarLogro(avatarUrl, tareas) {
-            document.getElementById("nuevoAvatarLogro").src = avatarUrl;
-            document.getElementById("logroTexto").innerText = `Has completado ${tareas} tareas y desbloqueado un avatar exclusivo!`;
-            document.getElementById("logroModal").style.display = "block";
-        }
+      // Asegurarse de que tareasCompletadas sea un número
+      const tareasCompletadas = Number(usuario.tareasCompletadas) || 0;
+      const progreso = tareasCompletadas % 5;
+      const tareasRestantes = 5 - progreso;
 
-        function cerrarLogro() {
-            document.getElementById("logroModal").style.display = "none";
-        }
+      document.getElementById("progress-text").innerText = `Te faltan ${tareasRestantes} tareas para el siguiente nivel`;
+      document.getElementById("progress-bar").style.width = `${(progreso / 5) * 100}%`;
 
-        cargarPerfil();
-    </script>
+      if (progreso === 0 && tareasCompletadas > 0) {
+        mostrarLogro(usuario.avatar, tareasCompletadas);
+      }
+    }
+
+    function mostrarLogro(avatarUrl, tareas) {
+      document.getElementById("nuevoAvatarLogro").src = avatarUrl;
+      document.getElementById("logroTexto").innerText = `Has completado ${tareas} tareas y desbloqueado un avatar exclusivo!`;
+      document.getElementById("logroModal").style.display = "block";
+    }
+
+    function cerrarLogro() {
+      document.getElementById("logroModal").style.display = "none";
+    }
+
+    cargarPerfil();
+  </script>
 </body>
 </html>
