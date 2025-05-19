@@ -203,13 +203,12 @@ app.post('/api/enviar-mensaje', async (req, res) => {
   if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
   const { chatId, texto, cifrado, archivoUrl } = req.body;
   try {
-    // Si se solicita cifrado, usa encryptMessage; de lo contrario, el mensaje en claro
     const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
 
     const mensajeData = {
       chat: chatId,
       sender: req.session.usuario._id,
-      cifrado: cifrado, // Guarda la bandera
+      cifrado: cifrado, // (si agregas esta bandera en el modelo)
       archivoUrl: archivoUrl || null
     };
 
@@ -219,23 +218,31 @@ app.post('/api/enviar-mensaje', async (req, res) => {
 
     const nuevoMensaje = new Mensaje(mensajeData);
     await nuevoMensaje.save();
-    
-    // Para emisión en tiempo real, ya desencriptas si es necesario:
     const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
+
+    // Registro en consola para depuración
+    if (archivoUrl) {
+      console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario} envió un archivo: ${archivoUrl}`);
+    } else {
+      // Desencriptamos para mostrar el mensaje plano en los logs
+      const textoPlano = cifrado ? decryptMessage(mensajeTexto) : mensajeTexto;
+      console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${textoPlano}`);
+    }
+
+    // Para emisión en tiempo real envía un objeto estructurado
     io.to(chatId).emit('nuevoMensaje', {
       ...mensajeConInfo._doc,
-      // Aquí se envía el mensaje desencriptado para la emisión en tiempo real.
-      contenido: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto,
       tipo: archivoUrl ? "archivo" : "texto",
+      contenido: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto,
       archivoUrl: archivoUrl
     });
-    
     res.json(mensajeConInfo);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al enviar mensaje' });
   }
 });
+
 
 
 // Obtener información de un chat (para header)
