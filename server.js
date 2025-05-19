@@ -12,6 +12,7 @@ require('dotenv').config();
 const Usuario = require('./models/Usuarios');
 const Chat = require('./models/Chat');
 const Mensaje = require('./models/Mensaje');
+const Tarea = require('../models/Tarea');
 
 // <-- NUEVO: Importar simple-encryptor e inicializarlo
 const simpleEncryptor = require('simple-encryptor');
@@ -298,6 +299,40 @@ app.get('/api/mensajes', async (req, res) => {
     res.status(500).json({ error: 'Error interno al obtener los mensajes' });
   }
 });
+
+//Endpoint Tareas
+
+app.post('/api/tareas/crear', async (req, res) => {
+  try {
+    const { usuario, descripcion, fechaVencimiento } = req.body;
+
+    if (!usuario || !descripcion || !fechaVencimiento) {
+      return res.status(400).json({ mensaje: 'Todos los campos son obligatorios' });
+    }
+
+    const nuevaTarea = new Tarea({
+      usuario,
+      descripcion,
+      fechaVencimiento
+    });
+
+    await nuevaTarea.save();
+    res.status(201).json({ mensaje: 'Tarea creada exitosamente', tarea: nuevaTarea });
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al crear la tarea', error });
+  }
+});
+
+//Obtener tareas
+app.get('/api/tareas', async (req, res) => {
+  try {
+    const tareas = await Tarea.find();
+    res.status(200).json(tareas);
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al obtener las tareas', error });
+  }
+});
+
 
 
 
