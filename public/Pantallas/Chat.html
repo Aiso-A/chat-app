@@ -10,15 +10,10 @@
 <link rel="stylesheet" href="/Chats.css" />
 <link rel="stylesheet" href="/Sidebar.css" />
 <style>
-
     .chat-container {
-
       max-width: 800px;
-
       margin: 2rem auto; 
-
       padding: 0 1rem;
-
     }
 </style>
 </head>
@@ -36,7 +31,7 @@
 <p id="username" class="text-light mt-3 ms-3"></p>
 </nav>
  
-  <!-- Contenedor del chat centrado -->
+  <!-- Contenedor del chat -->
 <div class="chat-container">
 <div class="card">
 <div class="card-header d-flex align-items-center justify-content-between">
@@ -50,6 +45,7 @@
 <div class="card-footer">
 <form id="formularioMensaje" class="d-flex gap-2">
 <input type="text" id="mensaje" class="form-control" placeholder="Escribe tu mensaje..." required />
+<input type="file" id="archivo" class="form-control"> <!-- 🔹 Nuevo: Enviar archivos -->
 <button type="submit" class="btn btn-primary">Enviar</button>
 </form>
 </div>
@@ -66,7 +62,7 @@
     fetch('/api/usuario-actual')
       .then(res => res.json())
       .then(data => {
-          if (!data || !data._id) {
+        if (!data || !data._id) {
           console.warn("⚠️ Usuario no autenticado");
           window.location.href = "LogIn.html";
           return;
@@ -74,7 +70,6 @@
         usuarioActual = data;
         document.getElementById('username').textContent = data.nombreUsuario;
         socket.emit('usuarioConectado', data.nombreUsuario);
-
         iniciarChat();
       })
       .catch(err => {
@@ -90,28 +85,6 @@
       socket.emit('joinRoom', chatId);
       loadChatInfo(chatId, tipo);
       loadMensajes(chatId);
-
-      setTimeout(() => {
-        console.log("Usuario después de 3 segundos:", usuarioActual);
-        document.getElementById("username").textContent = usuarioActual.nombreUsuario || "Desconocido";
-      }, 3000);
-    }
-
-    function loadChatInfo(chatId, tipo) {
-      fetch(`/api/chat-info?id=${chatId}&tipo=${tipo}`)
-        .then(res => res.json())
-        .then(data => {
-          const chatHeader = document.getElementById('chat-header');
-          if (tipo === 'individual') {
-            chatHeader.innerHTML = `
-<img src="${data.avatar || '/default-avatar.png'}" alt="${data.nombre}" style="width:40px;height:40px;border-radius:50%;margin-right:10px;">
-<h5 class="mb-0">${data.nombre}</h5>
-            `;
-          } else {
-            chatHeader.innerHTML = `<h5 class="mb-0">${data.nombre}</h5>`;
-          }
-        })
-        .catch(err => console.error('Error al cargar info del chat:', err));
     }
 
     function loadMensajes(chatId) {
@@ -124,7 +97,17 @@
           mensajes.forEach(m => {
             const div = document.createElement('div');
             div.className = 'mb-2';
-            div.innerHTML = `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto}`;
+            div.innerHTML = `<strong>${m.sender.nombreUsuario}:</strong> ${m.texto || ''}`;
+
+            // 🔹 Mostrar archivos adjuntos
+            if (m.fileUrl) {
+              if (m.fileType.startsWith("image")) {
+                div.innerHTML += `<br><img src="${m.fileUrl}" alt="Imagen" style="max-width:200px;border-radius:8px;">`;
+              } else {
+                div.innerHTML += `<br><a href="${m.fileUrl}" download>📄 Descargar archivo</a>`;
+              }
+            }
+
             mensajesDiv.appendChild(div);
           });
           mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
@@ -134,48 +117,50 @@
 
     // 🔒 Cifrado opcional
     let cifradoActivo = false;
-
     document.getElementById('toggleEncryption').addEventListener('click', () => {
       cifradoActivo = !cifradoActivo;
       document.getElementById('toggleEncryption').textContent = cifradoActivo ? "🔓 Cifrado: Activado" : "🔒 Cifrado: Desactivado";
     });
 
-    // Envío de mensajes con cifrado opcional
+    // 📩 Envío de mensajes y archivos
     document.getElementById('formularioMensaje').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const texto = document.getElementById('mensaje').value.trim();
-  if (!texto) return;
+      e.preventDefault();
+      const texto = document.getElementById('mensaje').value.trim();
+      const archivo = document.getElementById('archivo').files[0];
+      const chatId = new URLSearchParams(window.location.search).get('id');
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const chatId = urlParams.get('id');
+      const formData = new FormData();
+      formData.append("chatId", chatId);
+      formData.append("texto", texto);
+      formData.append("cifrado", cifradoActivo);
+      if (archivo) formData.append("file", archivo);
 
-  await fetch('/api/enviar-mensaje', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chatId, texto, cifrado: cifradoActivo })
-  });
+      await fetch('/api/enviar-mensaje', {
+        method: 'POST',
+        body: formData
+      });
 
-  document.getElementById('mensaje').value = '';
-});
+      document.getElementById('mensaje').value = '';
+      document.getElementById('archivo').value = '';
+    });
 
     socket.on('nuevoMensaje', (mensaje) => {
-      console.log("🔔 Nuevo mensaje recibido:", mensaje);
       const mensajesDiv = document.getElementById('mensajes');
       const div = document.createElement('div');
       div.className = 'mb-2';
-      div.innerHTML = `<strong>${mensaje.sender.nombreUsuario}:</strong> ${mensaje.texto}`;
+      div.innerHTML = `<strong>${mensaje.sender.nombreUsuario}:</strong> ${mensaje.texto || ''}`;
+
+      if (mensaje.fileUrl) {
+        if (mensaje.fileType.startsWith("image")) {
+          div.innerHTML += `<br><img src="${mensaje.fileUrl}" alt="Imagen" style="max-width:200px;border-radius:8px;">`;
+        } else {
+          div.innerHTML += `<br><a href="${mensaje.fileUrl}" download>📄 Descargar archivo</a>`;
+        }
+      }
+
       mensajesDiv.appendChild(div);
       mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
     });
-
-    
-    document.getElementById('startVideoCall').addEventListener('click', () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const chatId = urlParams.get('id');  // Opcional: puedes usar este chatId en la pantalla de videollamada
-  // Redirige a la pantalla de videollamada, pasando el chatId (si lo deseas)
-  window.location.href = `Videollamada.html?chatId=${chatId}`;
-});
-
 </script>
 
 </body>

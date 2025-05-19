@@ -6,28 +6,27 @@ const socketIO = require('socket.io');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
-require('dotenv').config();
+require('dotenv').config(); // <-- Cargar variables de entorno al inicio
 
 // Models
 const Usuario = require('./models/Usuarios');
 const Chat = require('./models/Chat');
 const Mensaje = require('./models/Mensaje');
 
-// <-- NUEVO: Importar simple-encryptor e inicializarlo
+// Seguridad y cifrado
 const simpleEncryptor = require('simple-encryptor');
 const secretKey = process.env.ENCRYPTION_KEY || 'default_secret_key';
 const encryptor = simpleEncryptor(secretKey);
 
-// Función para cifrar mensajes
+// Funciones de cifrado
 function encryptMessage(text) {
   return encryptor.encrypt(text);
 }
-
-// Función para descifrar mensajes
 function decryptMessage(ciphertext) {
   return encryptor.decrypt(ciphertext);
 }
 
+// Inicializar servidor
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
@@ -46,20 +45,46 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+// Manejo de sesiones
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGO_URI,
-  }),
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
   cookie: {
     maxAge: 1000 * 60 * 60 * 24,
     sameSite: 'lax',
     secure: false,
-    path: '/' 
+    path: '/'
   }
 }));
+
+// Cloudinary 
+const { storage } = require('./cloudinaryConfig');
+const multer = require('multer');
+const upload = multer({ storage });
+
+// Endpoint para subir archivos a Cloudinary
+app.post('/upload', upload.single('file'), async (req, res) => {
+  try {
+    const fileUrl = req.file.path;
+    const fileType = req.file.mimetype;
+
+    // Guardar mensaje con el archivo en MongoDB
+    const message = await Mensaje.create({
+      user: req.userId,
+      text: req.body.text || '',
+      fileUrl,
+      fileType,
+      timestamp: new Date()
+    });
+
+    res.status(200).json({ success: true, message });
+  } catch (error) {
+    console.error('❌ Error al subir archivo:', error);
+    res.status(500).json({ error: 'Error al subir archivo' });
+  }
+});
 
 
 ///////Endpoints///////
@@ -198,38 +223,6 @@ app.post('/api/chats/grupo', async (req, res) => {
   }
 });
 
-// Enviar mensaje en un chat
-app.post('/api/enviar-mensaje', async (req, res) => {
-  if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-  const { chatId, texto, cifrado } = req.body; // Recibimos la bandera de cifrado desde el cliente
-  try {
-    // Si se solicita cifrado, usa encryptMessage; de lo contrario, el mensaje en claro
-    const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
-
-    const nuevoMensaje = new Mensaje({
-      chat: chatId,
-      sender: req.session.usuario._id,
-      texto: mensajeTexto,
-      cifrado
-    });
-
-    await nuevoMensaje.save();
-    const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
-
-    console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${mensajeTexto}`);
-
-    // Emitir mensaje: si fue cifrado, descifrarlo para mostrarlo en el cliente
-    io.to(chatId).emit('nuevoMensaje', {
-      ...mensajeConInfo._doc,
-      texto: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto
-    });
-    res.json(mensajeConInfo);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al enviar mensaje' });
-  }
-});
-
 
 // Obtener información de un chat (para header)
 // Para chats individuales, devuelve datos del otro usuario; para grupales, el nombre del grupo.
@@ -259,16 +252,53 @@ app.get('/api/chat-info', async (req, res) => {
   }
 });
 
-// Obtener el historial de mensajes del chat
-app.get('/api/mensajes', async (req, res) => {
-  if (!req.session.usuario) {
-    return res.status(401).json({ error: 'No autenticado' });
+// 📩 **Enviar mensaje con archivo**
+app.post('/api/enviar-mensaje', upload.single('file'), async (req, res) => {
+  if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
+
+  const { chatId, texto, cifrado } = req.body;
+  const fileUrl = req.file ? req.file.path : null;
+  const fileType = req.file ? req.file.mimetype : null;
+
+  try {
+    const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
+
+    const nuevoMensaje = new Mensaje({
+      chat: chatId,
+      sender: req.session.usuario._id,
+      texto: mensajeTexto,
+      fileUrl,
+      fileType,
+      cifrado
+    });
+
+    await nuevoMensaje.save();
+    const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
+
+    console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${mensajeTexto}`);
+
+    io.to(chatId).emit('nuevoMensaje', {
+      ...mensajeConInfo._doc,
+      texto: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto
+    });
+
+    res.json(mensajeConInfo);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al enviar mensaje' });
   }
+});
+
+// 📜 **Recuperar mensajes con archivos**
+app.get('/api/mensajes', async (req, res) => {
+  if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
+
   const { chatId } = req.query;
   try {
     const mensajes = await Mensaje.find({ chat: chatId })
       .populate('sender', 'nombreUsuario')
-      .sort({ fecha: 1 }); // Orden ascendente (los mensajes se muestran desde el más antiguo al más reciente)
+      .sort({ fecha: 1 });
+
     res.json(mensajes);
   } catch (error) {
     console.error('Error al cargar mensajes:', error);
@@ -276,34 +306,29 @@ app.get('/api/mensajes', async (req, res) => {
   }
 });
 
-
-//Socket.io//
-
+// 🟢 **Socket.IO**
 const usuariosConectados = new Map();
 
 io.on('connection', (socket) => {
   console.log('🟢 Un usuario se conectó');
 
-  // Permitir que un socket se una a una sala específica (para recibir mensajes de un chat)
   socket.on('joinRoom', (chatId) => {
     socket.join(chatId);
     console.log(`Socket ${socket.id} se unió a la sala ${chatId}`);
   });
 
-  // Registrar usuario conectado
   socket.on('usuarioConectado', (nombreUsuario) => {
     if (usuariosConectados.has(nombreUsuario)) {
       const socketIdAnterior = usuariosConectados.get(nombreUsuario);
       io.to(socketIdAnterior).emit('duplicado');
       const anteriorSocket = io.sockets.sockets.get(socketIdAnterior);
       if (anteriorSocket) anteriorSocket.disconnect();
-      console.log(`🔁 Usuario ${nombreUsuario} inició sesión en otro lugar. Cerrando la sesión anterior.`);
+      console.log(`🔁 Usuario ${nombreUsuario} inició sesión en otro lugar.`);
     }
     usuariosConectados.set(nombreUsuario, socket.id);
     console.log(`✅ ${nombreUsuario} está conectado (${socket.id})`);
   });
 
-  // Detectar desconexión y notificar
   socket.on('disconnect', () => {
     for (const [nombreUsuario, id] of usuariosConectados.entries()) {
       if (id === socket.id) {
@@ -314,30 +339,26 @@ io.on('connection', (socket) => {
     }
   });
 
-///Código nuevo para las videollamadas///
-// Manejadores para el videochat
-socket.on('joinRoom', (roomId) => {
-  socket.join(roomId);
-  console.log(`Socket ${socket.id} se unió a la sala de video: ${roomId}`);
-  // Notifica a los demás que hay un nuevo usuario en la sala.
-  socket.to(roomId).emit('initiateCall');
-});
+  // 📩 **Enviar mensaje con archivos en tiempo real**
+  socket.on('nuevoMensaje', async ({ userId, text, fileUrl, fileType }) => {
+    try {
+      const message = await Mensaje.create({ chat: chatId, sender: userId, texto: text, fileUrl, fileType });
+      io.to(chatId).emit('mensajeRecibido', message);
+    } catch (error) {
+      console.error("❌ Error en Socket.IO:", error);
+    }
+  });
 
-socket.on('offer', (data) => {
-  // Reenvía la oferta al resto de la sala (excepto quien la envió)
-  console.log(`Recibida oferta de ${socket.id} para la sala ${data.roomId}`);
-  socket.to(data.roomId).emit('offer', data);
-});
+  // 🔹 **Videollamadas con WebRTC**
+  socket.on('joinRoom', (roomId) => {
+    socket.join(roomId);
+    console.log(`Socket ${socket.id} se unió a la sala de video: ${roomId}`);
+    socket.to(roomId).emit('initiateCall');
+  });
 
-socket.on('answer', (data) => {
-  console.log(`Recibida respuesta de ${socket.id} para la sala ${data.roomId}`);
-  socket.to(data.roomId).emit('answer', data);
-});
-
-socket.on('iceCandidate', (data) => {
-  console.log(`Recibido ICE Candidate de ${socket.id} para la sala ${data.roomId}`);
-  socket.to(data.roomId).emit('iceCandidate', data);
-});
+  socket.on('offer', (data) => socket.to(data.roomId).emit('offer', data));
+  socket.on('answer', (data) => socket.to(data.roomId).emit('answer', data));
+  socket.on('iceCandidate', (data) => socket.to(data.roomId).emit('iceCandidate', data));
 });
 
 // Middleware catch-all
