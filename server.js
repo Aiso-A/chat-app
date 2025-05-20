@@ -39,6 +39,7 @@ app.use(session({
   secret: 'secretoByteTalk',
   resave: false,
   saveUninitialized: false,
+  cookie: { secure: false } // debe ser false si estás en HTTP
   store: MongoStore.create({ mongoUrl: uri })
 }));
 
@@ -88,6 +89,7 @@ app.post('/login', async (req, res) => {
         nombreCompleto: usuario.nombreCompleto,
         email: usuario.email
       };
+      console.log('Sesión guardada:', req.session.usuario);
       return res.redirect('/chats');
     } else {
       return res.send('<script>alert("Credenciales inválidas"); window.location.href="/Pantallas/LogIn.html";</script>');
@@ -134,6 +136,7 @@ app.get('/chats', requireLogin, async (req, res) => {
     const html = fs.readFileSync(path.join(__dirname, 'public', 'Pantallas', 'Chats.html'), 'utf8');
     const htmlConUsuario = html.replace('{{usuario}}', req.session.usuario.nombreUsuario);
     res.send(htmlConUsuario);
+    console.log('Sesión actual en /chats:', req.session.usuario);
   } catch (err) {
     console.error('❌ Error al cargar Chats.html:', err);
     res.status(500).send('Errores internos');
