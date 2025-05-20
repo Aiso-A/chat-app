@@ -313,7 +313,6 @@ app.get('/api/mensajes', async (req, res) => {
 });
 
 //Endpoint Tareas
-
 app.post('/api/tareas/crear', async (req, res) => {
   try {
     const { usuario, descripcion, fechaVencimiento } = req.body;
@@ -328,9 +327,12 @@ app.post('/api/tareas/crear', async (req, res) => {
     await nuevaTarea.save();
     res.status(201).json({ mensaje: 'Tarea creada exitosamente', tarea: nuevaTarea });
   } catch (error) {
-    res.status(500).json({ mensaje: 'Error al crear la tarea', error });
+    console.error("Error al crear la tarea:", error);
+    // Registra error.message y error.stack para más detalles
+    res.status(500).json({ mensaje: 'Error al crear la tarea', error: error.message });
   }
 });
+
 
 //Obtener tareas
 app.get('/api/tareas', async (req, res) => {
