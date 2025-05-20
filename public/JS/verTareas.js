@@ -2,7 +2,7 @@
 fetch('/api/tareas')
   .then(res => res.json())
   .then(tareas => {
-    const contenedor = document.getElementById('listaTareas');
+    const contenedor = document.getElementById('mis-Tareas');
 
     if (tareas.length === 0) {
       contenedor.innerHTML = '<p>No hay tareas registradas.</p>';
@@ -10,18 +10,16 @@ fetch('/api/tareas')
     }
 
     tareas.forEach(tarea => {
-      const div = document.createElement('div');
-      div.innerHTML = `
+      const li = document.createElement('li');
+      li.innerHTML = `
         <h3>${tarea.titulo}</h3>
-        <p><strong>Descripción:</strong> ${tarea.descripcion || 'N/A'}</p>
         <p><strong>Fecha entrega:</strong> ${new Date(tarea.fecha_entrega).toLocaleString()}</p>
-        <p><strong>Puntos:</strong> ${tarea.puntos ?? 'N/A'}</p>
         <hr>
       `;
-      contenedor.appendChild(div);
+      contenedor.appendChild(li);
     });
   })
   .catch(err => {
     console.error('Error al cargar tareas:', err);
-    document.getElementById('listaTareas').innerText = 'Error al cargar tareas.';
+    document.getElementById('mis-Tareas').innerText = 'Error al cargar tareas.';
   });
