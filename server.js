@@ -358,17 +358,15 @@ app.put('/api/tareas/completar/:id', async (req, res) => {
 });
 
 ///Recompenzas//
-
-//Desbloquear nuevo avatar//
 app.put('/api/usuario/revisar-recompensa/:id', async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.params.id);
     if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
 
-    // Calcular si debe desbloquear un avatar nuevo
+    // Calcular si debe desbloquear un nuevo avatar
     const nuevoNivel = Math.floor(usuario.tareasCompletadas / 5);
 
-    if (nuevoNivel > usuario.avatarActual && nuevoNivel <= 5) {
+    if (nuevoNivel > usuario.avatarActual && nuevoNivel <= 5) { // Máximo 5 avatares disponibles
       usuario.avatarActual = nuevoNivel;
       usuario.avatar = `/img/avatar${nuevoNivel}.png`; 
       await usuario.save();
@@ -381,6 +379,28 @@ app.put('/api/usuario/revisar-recompensa/:id', async (req, res) => {
     res.status(500).json({ mensaje: 'Error al verificar recompensa', error });
   }
 });
+
+
+//Desbloquear nuevo avatar//
+app.put('/api/tareas/completar/:id', async (req, res) => {
+  try {
+    const tarea = await Tarea.findById(req.params.id);
+    if (!tarea) return res.status(404).json({ mensaje: 'Tarea no encontrada' });
+
+    if (tarea.completada) return res.status(400).json({ mensaje: 'La tarea ya está completada' });
+
+    tarea.completada = true;
+    await tarea.save();
+
+    // Incrementar el contador de tareas completadas del usuario
+    const usuario = await Usuario.findByIdAndUpdate(tarea.usuario, { $inc: { tareasCompletadas: 1 } }, { new: true });
+
+    res.status(200).json({ mensaje: 'Tarea completada exitosamente', usuario });
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al completar la tarea', error });
+  }
+});
+
 
 
 //Socket.io//
