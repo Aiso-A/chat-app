@@ -39,17 +39,20 @@
       </ul>
     </nav>
 
-    <div class="container profile-container">
+       <div class="container profile-container">
       <!-- Sección de Perfil -->
       <div class="profile-header text-center">
         <div class="profile-avatar">
-          <!-- Aquí podrías mostrar otra imagen o dejarlo vacío -->
+          <!-- Imagen predeterminada; se actualizará si el usuario tiene avatar personalizado -->
+          <img id="profile-img" src="/img/Avatar0.png" alt="Avatar del Usuario" />
         </div>
-        <h2 class="username">MaSanti_93</h2>
-        <p class="full-name">Marco Santiago Gomez Martines</p>
-        <p class="email">POIPrueba@gmail.com</p>
-        <span class="status online">● Activo</span>
+        <!-- Los siguientes elementos se completarán con los datos del usuario -->
+        <h2 id="username" class="username"></h2>
+        <p id="full-name" class="full-name"></p>
+        <p id="email" class="email"></p>
+        <span id="status" class="status online"></span>
       </div>
+    </div>
 
       <!-- Sección de Recompensas -->
       <div class="rewards-section">
@@ -80,6 +83,16 @@
         fetch("/api/usuario-actual")
           .then((response) => response.json())
           .then((usuario) => {
+            
+            // Actualiza el nombre de usuario
+            document.getElementById("username").textContent = usuario.nombreUsuario || "";
+            
+            // Actualiza el nombre completo
+            document.getElementById("full-name").textContent = usuario.nombreCompleto || "";
+            
+            // Actualiza el correo electrónico
+            document.getElementById("email").textContent = usuario.email || "";
+
             // Si usuario.tareasCompletadas es indefinido, se asume 0.
             let tareasCompletadas = usuario.tareasCompletadas || 0;
 
