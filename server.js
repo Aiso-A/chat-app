@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 3000;
 const uri = process.env.MONGO_URI;
 
 // Conexión a MongoDB
-mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(uri, { useNewUrlParser: true })
   .then(() => console.log('✅ Conectado a MongoDB'))
   .catch((err) => console.error('❌ Error al conectar a MongoDB:', err));
 
@@ -39,8 +39,8 @@ app.use(session({
   secret: 'secretoByteTalk',
   resave: false,
   saveUninitialized: false,
-  //cookie: { secure: false } // debe ser false si estás en HTTP
-  store: MongoStore.create({ mongoUrl: uri })
+  cookie: { secure: false } // debe ser false si estás en HTTP
+  //store: MongoStore.create({ mongoUrl: uri })
 }));
 
 // Middleware para proteger rutas
