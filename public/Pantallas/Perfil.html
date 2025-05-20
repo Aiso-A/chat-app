@@ -94,14 +94,11 @@
             document.getElementById("email").textContent = usuario.email || "";
 
             //Actualiza la imagen de perfil
-            document.getElementById("profile-img").textContent = usuario.avatar || "/img/Avatar0.png";
-
-            // Si usuario.tareasCompletadas es indefinido, se asume 0.
+            document.getElementById("profile-img").src = usuario.avatar || "/img/Avatar0.png";
+            
             let tareasCompletadas = usuario.tareasCompletadas || 0;
 
             // Calcula el índice de recompensa:
-            // Para 0 tareas: Math.floor(0/5) + 1 === 1, es decir, Avatar1.png
-            // Cada 5 tareas se incrementa el índice, hasta un máximo de 5.
             let rewardIndex = Math.floor(tareasCompletadas / 5) + 1;
             if (rewardIndex < 1) rewardIndex = 1;
             if (rewardIndex > 5) rewardIndex = 5;
@@ -110,9 +107,6 @@
             const avatarURL = `/img/Avatar${rewardIndex}.png`;
             document.getElementById("user-avatar").src = avatarURL;
 
-            // Calcula cuántas tareas faltan para desbloquear la siguiente imagen.
-            // Si el usuario tiene un resto de tareas completadas en el ciclo (módulo 5),
-            // se calcula cuántas faltan. Si ya está justo en un múltiplo (0), se mostrará 5.
             const mod = tareasCompletadas % 5;
             const tareasRestantes = mod === 0 ? 5 : 5 - mod;
 
@@ -125,7 +119,7 @@
           .catch((error) => {
             console.error("Error al obtener datos del usuario:", error);
             // En caso de error, se deja el valor por defecto.
-            document.getElementById("user-avatar").src = "/img/Avatar1.png";
+            document.getElementById("user-avatar").src = "/img/Avatar0.png";
             document.getElementById("reward-message").textContent =
               "Completa 5 tareas para desbloquear la siguiente imagen";
           });
