@@ -308,31 +308,30 @@ app.get('/api/mensajes', async (req, res) => {
 //Endpoint Tareas
 
 //Crear tareas
-// Crear tareas
 app.post('/api/tareas/crear', async (req, res) => {
     try {
-        // Obtener el usuario desde la sesión
-        const usuario = req.session.usuario?._id;
-        const { descripcion, fechaVencimiento } = req.body;
+        console.log("Datos recibidos en /api/tareas/crear:", req.body);  // 👀 Ver qué está llegando
+        const { usuario, descripcion, fechaVencimiento } = req.body;
 
-        // Validar que todos los campos estén presentes
         if (!usuario || !descripcion || !fechaVencimiento) {
             return res.status(400).json({ mensaje: 'Todos los campos son obligatorios' });
         }
 
-        // Crear la tarea con el usuario autenticado
         const nuevaTarea = new Tarea({
             usuario,
             descripcion,
-            fechaVencimiento
+            fechaVencimiento: new Date(fechaVencimiento) // Convertimos explícitamente a Date
         });
 
         await nuevaTarea.save();
         res.status(201).json({ mensaje: 'Tarea creada exitosamente', tarea: nuevaTarea });
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error al crear la tarea', error });
+        console.error("Error al crear la tarea:", error);
+        res.status(500).json({ mensaje: 'Error al crear la tarea', error: error.message });
     }
 });
+
+
 
 
 //Obtener tareas

@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', cargarTareas);
     let titulo = document.getElementById('tituloTarea').value;
     let fecha = document.getElementById('fechaLimite').value;
 
-    console.log("Usuario antes de enviar tarea:", usuarioActual); 
+    console.log("Usuario antes de enviar tarea:", usuarioActual);
 
     if (!usuarioActual || !usuarioActual._id) {
         alert("Usuario no autenticado");
@@ -181,10 +181,12 @@ document.addEventListener('DOMContentLoaded', cargarTareas);
 
     if (titulo && fecha) {
         const tarea = {
-            usuario: usuarioActual._id, // Este dato se podrá omitir en el backend, ya que se obtiene de la sesión
+            usuario: usuarioActual._id, // Obtener el usuario autenticado
             descripcion: titulo,
             fechaVencimiento: fecha
         };
+
+        console.log("Datos que se enviarán en la tarea:", tarea); // 👀 Esto mostrará los datos antes de enviarlos
 
         try {
             let response = await fetch('/api/tareas/crear', {
@@ -205,6 +207,7 @@ document.addEventListener('DOMContentLoaded', cargarTareas);
         }
     }
 });
+
     </script>
 </body>
 </html>
