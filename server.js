@@ -94,7 +94,7 @@ app.post('/login', async (req, res) => {
     }
   } catch (err) {
     console.error('❌ Error en login:', err);
-    return res.status(500).send('<script>alert("Error en el servidor."); window.location.href="/Pantallas/LogIn.html";</script>');
+    return res.status(500).send('<script>alert("Errores en el servidor."); window.location.href="/Pantallas/LogIn.html";</script>');
   }
 });
 
