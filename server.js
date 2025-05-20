@@ -45,7 +45,7 @@ app.use(session({
     secure: false,
     httpOnly: true,
     sameSite: 'lax'
-  }
+  },
   store: MongoStore.create({ mongoUrl: uri })
 }));
 
