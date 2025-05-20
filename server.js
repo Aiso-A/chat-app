@@ -310,31 +310,38 @@ app.post('/api/tareas/crear', async (req, res) => {
       return res.status(400).json({ mensaje: 'Todos los campos son obligatorios' });
     }
 
-    const nuevaTarea = new Tarea({
-      usuario,
-      descripcion,
-      fechaVencimiento
-    });
-
+    const nuevaTarea = new Tarea({ usuario, descripcion, fechaVencimiento });
     await nuevaTarea.save();
+
     res.status(201).json({ mensaje: 'Tarea creada exitosamente', tarea: nuevaTarea });
   } catch (error) {
     res.status(500).json({ mensaje: 'Error al crear la tarea', error });
   }
 });
 
+
 //Obtener tareas
 app.get('/api/tareas', async (req, res) => {
   try {
-    const userId = req.session?.userId || req.headers['usuario-id']; // Ajusta según tu sistema de autenticación
-    if (!userId) return res.status(401).json({ mensaje: 'Usuario no autenticado' });
+    const userId = req.query.usuario || req.session?.userId; 
 
-    const tareas = await Tarea.find({ usuario: userId }); // Filtrar por usuario
+    if (!userId) {
+      return res.status(401).json({ mensaje: 'Usuario no autenticado' });
+    }
+
+    const tareas = await Tarea.find({ usuario: userId });
+
+    if (!tareas || tareas.length === 0) {
+      return res.status(404).json({ mensaje: 'No se encontraron tareas' });
+    }
+
     res.status(200).json(tareas);
   } catch (error) {
+    console.error("Error interno al obtener tareas:", error);
     res.status(500).json({ mensaje: 'Error al obtener las tareas', error });
   }
 });
+
 
 
 //Completar tareas
@@ -342,16 +349,27 @@ app.put('/api/tareas/completar/:id', async (req, res) => {
   try {
     const tarea = await Tarea.findById(req.params.id);
     if (!tarea) return res.status(404).json({ mensaje: 'Tarea no encontrada' });
-
     if (tarea.completada) return res.status(400).json({ mensaje: 'La tarea ya está completada' });
 
     tarea.completada = true;
     await tarea.save();
 
-    // Incrementar el contador de tareas completadas del usuario
-    await Usuario.findByIdAndUpdate(tarea.usuario, { $inc: { tareasCompletadas: 1 } });
+    // Incrementar tareas completadas y verificar recompensa
+    const usuario = await Usuario.findById(tarea.usuario);
+    usuario.tareasCompletadas += 1;
 
-    res.status(200).json({ mensaje: 'Tarea completada exitosamente' });
+    const nuevoNivel = Math.floor(usuario.tareasCompletadas / 5);
+    if (nuevoNivel > usuario.nivelRecompensa && nuevoNivel <= 5) {
+        usuario.nivelRecompensa = nuevoNivel;
+        usuario.avatar = `/img/avatar${nuevoNivel}.png`;
+    }
+
+    await usuario.save();
+
+    // Emitir evento de tarea completada
+    io.emit('tareaCompletada', { usuarioId: usuario._id, nivel: usuario.nivelRecompensa });
+
+    res.status(200).json({ mensaje: 'Tarea completada exitosamente', usuario });
   } catch (error) {
     res.status(500).json({ mensaje: 'Error al completar la tarea', error });
   }

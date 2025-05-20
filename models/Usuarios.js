@@ -6,9 +6,9 @@ const usuarioSchema = new mongoose.Schema({
   nombreUsuario: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  avatar: { type: String, default: '/img/PerfilD.png' },
-  tareasCompletadas: { type: Number, default: 0 }
-});
+  avatar: { type: String, default: '/img/avatar0.png' }, 
+  tareasCompletadas: { type: Number, default: 0 },
+  nivelRecompensa: { type: Number, default: 0 } });
 
 usuarioSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();

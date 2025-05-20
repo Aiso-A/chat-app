@@ -114,15 +114,18 @@
 
 async function cargarTareas() {
     try {
-        let response = await fetch('/api/tareas', {
-            method: 'GET',
-            headers: { 'usuario-id': usuarioActual?._id }
-        });
+        if (!usuarioActual || !usuarioActual._id) {
+            console.warn("⚠️ Usuario no autenticado. Redirigiendo a LogIn...");
+            window.location.href = "LogIn.html";
+            return;
+        }
+
+        let response = await fetch(`/api/tareas?usuario=${usuarioActual._id}`, { method: 'GET' });
 
         let data = await response.json();
 
         if (response.status === 401) {
-            console.warn("⚠️ Usuario no autenticado. Redirigiendo a LogIn...");
+            console.warn("⚠️ Usuario no autenticado.");
             window.location.href = "LogIn.html";
             return;
         }
