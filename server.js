@@ -136,7 +136,7 @@ app.get('/chats', requireLogin, async (req, res) => {
     res.send(htmlConUsuario);
   } catch (err) {
     console.error('❌ Error al cargar Chats.html:', err);
-    res.status(500).send('Error interno');
+    res.status(500).send('Errores interno');
   }
 });
 
