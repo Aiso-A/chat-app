@@ -39,7 +39,7 @@ app.use(session({
   secret: 'secretoByteTalk',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } // debe ser false si estás en HTTP
+  //cookie: { secure: false } // debe ser false si estás en HTTP
   store: MongoStore.create({ mongoUrl: uri })
 }));
 
