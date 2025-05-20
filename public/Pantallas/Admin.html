@@ -114,8 +114,23 @@
 
 async function cargarTareas() {
     try {
-        let response = await fetch('/api/tareas');
-        let tareas = await response.json();
+        let response = await fetch('/api/tareas', {
+            method: 'GET',
+            headers: { 'usuario-id': usuarioActual?._id }
+        });
+
+        let data = await response.json();
+
+        if (response.status === 401) {
+            console.warn("⚠️ Usuario no autenticado. Redirigiendo a LogIn...");
+            window.location.href = "LogIn.html";
+            return;
+        }
+
+        if (!Array.isArray(data)) {
+            console.error("Error: Respuesta inesperada del servidor.", data);
+            return;
+        }
 
         let listaPendientes = document.getElementById('tareasPendientes');
         let listaCompletadas = document.getElementById('tareasCompletadas');
@@ -123,7 +138,7 @@ async function cargarTareas() {
         listaPendientes.innerHTML = "";
         listaCompletadas.innerHTML = "";
 
-        tareas.forEach(tarea => {
+        data.forEach(tarea => {
             let nuevaTarea = document.createElement('li');
             nuevaTarea.innerHTML = `📌 <strong>${tarea.descripcion}</strong> <span class="task-date">${tarea.fechaVencimiento}</span>`;
             nuevaTarea.classList.add('task-item');
@@ -146,6 +161,7 @@ async function cargarTareas() {
         console.error('Error al cargar las tareas:', error);
     }
 }
+
 
 document.addEventListener('DOMContentLoaded', cargarTareas);
 
