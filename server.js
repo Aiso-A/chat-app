@@ -324,18 +324,13 @@ app.post('/api/tareas/crear', async (req, res) => {
 });
 
 //Obtener tareas
-app.get('/api/tareas', async (req, res) => {
-  try {
-    const userId = req.session?.userId || req.headers['usuario-id']; // Ajusta según tu sistema de autenticación
-    if (!userId) return res.status(401).json({ mensaje: 'Usuario no autenticado' });
-
-    const tareas = await Tarea.find({ usuario: userId }); // Filtrar por usuario
-    res.status(200).json(tareas);
-  } catch (error) {
-    res.status(500).json({ mensaje: 'Error al obtener las tareas', error });
-  }
+app.post('/api/tareas', async (req, res) => {
+    console.log('Datos recibidos:', req.body);
+    // Verifica si usuario existe y tiene un valor válido
+    if (!req.body.usuario) {
+        return res.status(400).json({ mensaje: 'Usuario no proporcionado' });
+    }
 });
-
 
 //Completar tareas
 app.put('/api/tareas/completar/:id', async (req, res) => {
