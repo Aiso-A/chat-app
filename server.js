@@ -62,6 +62,11 @@ app.use(session({
   }
 }));
 
+// 🔍 Middleware para depurar la sesión del usuario
+app.use((req, res, next) => {
+    console.log("Sesión del usuario:", req.session.usuario);
+    next();
+});
 
 ///////Endpoints///////
 
@@ -303,34 +308,45 @@ app.get('/api/mensajes', async (req, res) => {
 //Endpoint Tareas
 
 app.post('/api/tareas/crear', async (req, res) => {
-  try {
-    const { usuario, descripcion, fechaVencimiento } = req.body;
+    try {
+        // Obtener el usuario desde la sesión
+        const usuario = req.session.usuario?._id;
+        const { descripcion, fechaVencimiento } = req.body;
 
-    if (!usuario || !descripcion || !fechaVencimiento) {
-      return res.status(400).json({ mensaje: 'Todos los campos son obligatorios' });
+        // Validar que todos los campos estén presentes
+        if (!usuario || !descripcion || !fechaVencimiento) {
+            return res.status(400).json({ mensaje: 'Todos los campos son obligatorios' });
+        }
+
+        // Crear la tarea con el usuario autenticado
+        const nuevaTarea = new Tarea({
+            usuario,  // Aquí aseguramos que el usuario viene de la sesión
+            descripcion,
+            fechaVencimiento
+        });
+
+        await nuevaTarea.save();
+        res.status(201).json({ mensaje: 'Tarea creada exitosamente', tarea: nuevaTarea });
+    } catch (error) {
+        res.status(500).json({ mensaje: 'Error al crear la tarea', error });
     }
+});
 
-    const nuevaTarea = new Tarea({
-      usuario,
-      descripcion,
-      fechaVencimiento
-    });
 
-    await nuevaTarea.save();
-    res.status(201).json({ mensaje: 'Tarea creada exitosamente', tarea: nuevaTarea });
+//Obtener tareas
+app.get('/api/tareas/:usuarioId', async (req, res) => {
+  try {
+    const usuarioId = req.params.usuarioId;
+    if (!usuarioId) return res.status(400).json({ mensaje: 'Usuario no proporcionado' });
+
+    const tareas = await Tarea.find({ usuario: usuarioId });
+    res.json(tareas);
   } catch (error) {
-    res.status(500).json({ mensaje: 'Error al crear la tarea', error });
+    console.error("Error al obtener las tareas:", error);
+    res.status(500).json({ mensaje: 'Error al obtener las tareas', error });
   }
 });
 
-//Obtener tareas
-app.post('/api/tareas', async (req, res) => {
-    console.log('Datos recibidos:', req.body);
-    // Verifica si usuario existe y tiene un valor válido
-    if (!req.body.usuario) {
-        return res.status(400).json({ mensaje: 'Usuario no proporcionado' });
-    }
-});
 
 //Completar tareas
 app.put('/api/tareas/completar/:id', async (req, res) => {

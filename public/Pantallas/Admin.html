@@ -171,6 +171,9 @@ document.addEventListener('DOMContentLoaded', cargarTareas);
             let titulo = document.getElementById('tituloTarea').value;
             let fecha = document.getElementById('fechaLimite').value;
 
+
+    console.log("Usuario antes de enviar tarea:", usuarioActual); 
+
             if (!usuarioActual || !usuarioActual._id) {
                 alert("Usuario no autenticado");
                 return;
