@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const getNextSequence = require('./Counter'); // asumiendo que exportas la función
+const getNextSequence = require('./Contador'); // asumiendo que exportas la función
 // no necesitas importar Grupo aquí si solo usas ref
 
 const tareaSchema = new mongoose.Schema({
