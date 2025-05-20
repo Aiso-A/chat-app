@@ -246,6 +246,17 @@ app.post('/crear-tarea', async (req, res) => {
   }
 });
 
+//Obtener lista de tareas
+app.get('/api/tareas', async (req, res) => {
+  try {
+    const tareas = await Tarea.find();
+    res.json(tareas);
+  } catch (err) {
+    console.error('❌ Error al obtener tareas:', err);
+    res.status(500).json({ error: 'Error al obtener tareas' });
+  }
+});
+
 
 // Obtener mensajes de un chat
 app.get('/api/mensajes/:chatId', requireLogin, async (req, res) => {
