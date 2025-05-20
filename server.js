@@ -326,12 +326,36 @@ app.post('/api/tareas/crear', async (req, res) => {
 //Obtener tareas
 app.get('/api/tareas', async (req, res) => {
   try {
-    const tareas = await Tarea.find();
+    const userId = req.session?.userId || req.headers['usuario-id']; 
+    if (!userId) return res.status(401).json({ mensaje: 'Usuario no autenticado' });
+
+    const tareas = await Tarea.find({ usuario: userId }); 
     res.status(200).json(tareas);
   } catch (error) {
     res.status(500).json({ mensaje: 'Error al obtener las tareas', error });
   }
 });
+
+//Completar tareas
+app.put('/api/tareas/completar/:id', async (req, res) => {
+  try {
+    const tarea = await Tarea.findById(req.params.id);
+    if (!tarea) return res.status(404).json({ mensaje: 'Tarea no encontrada' });
+
+    if (tarea.completada) return res.status(400).json({ mensaje: 'La tarea ya está completada' });
+
+    tarea.completada = true;
+    await tarea.save();
+
+    // Incrementar el contador de tareas completadas del usuario
+    await Usuario.findByIdAndUpdate(tarea.usuario, { $inc: { tareasCompletadas: 1 } });
+
+    res.status(200).json({ mensaje: 'Tarea completada exitosamente' });
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al completar la tarea', error });
+  }
+});
+
 
 
 

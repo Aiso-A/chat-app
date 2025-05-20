@@ -94,34 +94,61 @@
             document.getElementById('modalTarea').style.display = 'none';
         });
 
-        async function cargarTareas() {
-            try {
-                let response = await fetch('/api/tareas');
-                let tareas = await response.json();
+   async function finalizarTarea(tareaId) {
+    try {
+        let response = await fetch(`/api/tareas/completar/${tareaId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' }
+        });
 
-                let listaPendientes = document.getElementById('tareasPendientes');
-                let listaCompletadas = document.getElementById('tareasCompletadas');
-
-                listaPendientes.innerHTML = "";
-                listaCompletadas.innerHTML = "";
-
-                tareas.forEach(tarea => {
-                    let nuevaTarea = document.createElement('li');
-                    nuevaTarea.innerHTML = `📌 <strong>${tarea.descripcion}</strong> <span class="task-date">${tarea.fechaVencimiento}</span>`;
-                    nuevaTarea.classList.add('task-item');
-
-                    if (tarea.completada) {
-                        nuevaTarea.classList.add('completed');
-                        nuevaTarea.innerHTML = `✅ <strong>${tarea.descripcion}</strong> <span class="task-date">Completado</span>`;
-                        listaCompletadas.appendChild(nuevaTarea);
-                    } else {
-                        listaPendientes.appendChild(nuevaTarea);
-                    }
-                });
-            } catch (error) {
-                console.error('Error al cargar las tareas:', error);
-            }
+        let data = await response.json();
+        if (response.ok) {
+            cargarTareas(); // Refrescar la lista después de completar una tarea
+        } else {
+            alert(data.mensaje);
         }
+    } catch (error) {
+        alert('Error al completar la tarea');
+    }
+}
+
+async function cargarTareas() {
+    try {
+        let response = await fetch('/api/tareas');
+        let tareas = await response.json();
+
+        let listaPendientes = document.getElementById('tareasPendientes');
+        let listaCompletadas = document.getElementById('tareasCompletadas');
+
+        listaPendientes.innerHTML = "";
+        listaCompletadas.innerHTML = "";
+
+        tareas.forEach(tarea => {
+            let nuevaTarea = document.createElement('li');
+            nuevaTarea.innerHTML = `📌 <strong>${tarea.descripcion}</strong> <span class="task-date">${tarea.fechaVencimiento}</span>`;
+            nuevaTarea.classList.add('task-item');
+
+            let botonFinalizar = document.createElement('button');
+            botonFinalizar.textContent = '✅ Finalizar';
+            botonFinalizar.classList.add('finalizar-btn');
+            botonFinalizar.onclick = () => finalizarTarea(tarea._id);
+
+            if (tarea.completada) {
+                nuevaTarea.classList.add('completed');
+                nuevaTarea.innerHTML = `✅ <strong>${tarea.descripcion}</strong> <span class="task-date">Completado</span>`;
+                listaCompletadas.appendChild(nuevaTarea);
+            } else {
+                nuevaTarea.appendChild(botonFinalizar);
+                listaPendientes.appendChild(nuevaTarea);
+            }
+        });
+    } catch (error) {
+        console.error('Error al cargar las tareas:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', cargarTareas);
+
 
         document.getElementById('guardarTarea').addEventListener('click', async function () {
             let titulo = document.getElementById('tituloTarea').value;
