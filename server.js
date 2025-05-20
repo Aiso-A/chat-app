@@ -98,9 +98,11 @@ app.post('/login', async (req, res) => {
       console.log('Sesión guardada:', req.session.usuario);
       return res.redirect('/chats');
     } else {
+      console.log('comparar en login', req.session.usuario);
       return res.send('<script>alert("Credenciales inválidas"); window.location.href="/Pantallas/LogIn.html";</script>');
     }
   } catch (err) {
+    console.log('error en login', req.session.usuario);
     console.error('❌ Error en login:', err);
     return res.status(500).send('<script>alert("Errores en el servidor."); window.location.href="/Pantallas/LogIn.html";</script>');
   }
@@ -144,6 +146,7 @@ app.get('/chats', requireLogin, async (req, res) => {
     res.send(htmlConUsuario);
     console.log('Sesión actual en /chats:', req.session.usuario);
   } catch (err) {
+    console.log('error en chats', req.session.usuario);
     console.error('❌ Error al cargar Chats.html:', err);
     res.status(500).send('Errores internos');
   }
