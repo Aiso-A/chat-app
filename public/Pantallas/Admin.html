@@ -77,21 +77,29 @@
         });
 
         document.getElementById('guardarTarea').addEventListener('click', function() {
-            let titulo = document.getElementById('tituloTarea').value;
-            let fecha = document.getElementById('fechaLimite').value;
             
-            if (titulo && fecha) {
-                let nuevaTarea = document.createElement('li');
-                nuevaTarea.innerHTML = `📌 <strong>${titulo}</strong> <span class="task-date">${fecha}</span>`;
-                nuevaTarea.classList.add('task-item');
-                nuevaTarea.addEventListener('click', function() {
-                    this.classList.add('completed');
-                    document.getElementById('tareasCompletadas').appendChild(this);
-                    this.innerHTML = `✅ <strong>${titulo}</strong> <span class="task-date">Completado</span>`;
+            const nuevaTarea = {
+            titulo: document.getElementById('titulo').value,
+            descripcion: document.getElementById('descripcion').value || null,
+            fecha_entrega: document.getElementById('fecha_entrega').value,
+            grupoID: parseInt(document.getElementById('grupoID').value) || null,
+            puntos: parseInt(document.getElementById('puntos').value) || null
+            };
+
+            fetch('/api/tareas/crear', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(nuevaTarea)
+            })
+                .then(res => res.json())
+                .then(data => {
+                alert('Tarea creada con éxito');
+                console.log(data);
+                })
+                .catch(err => {
+                alert('Error al crear la tarea');
+                console.error(err);
                 });
-                document.getElementById('tareasPendientes').appendChild(nuevaTarea);
-                document.getElementById('modalTarea').style.display = 'none';
-            }
         });
     </script>
 </body>
