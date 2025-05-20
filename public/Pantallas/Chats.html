@@ -123,7 +123,7 @@
     const socket = io();
 
     // Se obtiene el usuario actual; si no existe, se redirige a login.
-    fetch('/api/usuario-actual')
+    fetch('/api/usuario-actual', {credentials: 'include'})
       .then(res => res.json())
       .then(data => {
         if (!data || !data._id) {
