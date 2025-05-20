@@ -1,41 +1,31 @@
-const cookieParser = require('cookie-parser');
 const express = require('express');
 const path = require('path');
 const http = require('http');
+const fs = require('fs');
 const socketIO = require('socket.io');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 require('dotenv').config();
 
-// Models
+// Modelos
 const Usuario = require('./models/Usuarios');
 const Chat = require('./models/Chat');
 const Mensaje = require('./models/Mensaje');
-
-// <-- NUEVO: Importar simple-encryptor e inicializarlo
-const simpleEncryptor = require('simple-encryptor');
-const secretKey = process.env.ENCRYPTION_KEY || 'default_secret_key';
-const encryptor = simpleEncryptor(secretKey);
-
-// Función para cifrar mensajes
-function encryptMessage(text) {
-  return encryptor.encrypt(text);
-}
-
-// Función para descifrar mensajes
-function decryptMessage(ciphertext) {
-  return encryptor.decrypt(ciphertext);
-}
+// Tareas agregado
+const Tareas = require('./models/Tareas');
+const TareasE = require('./models/Tareas-E');
+const Counter = require('./models/Contador');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
+
 const PORT = process.env.PORT || 3000;
 const uri = process.env.MONGO_URI;
 
-// Conectar a MongoDB
-mongoose.connect(uri)
+// Conexión a MongoDB
+mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('✅ Conectado a MongoDB'))
   .catch((err) => console.error('❌ Error al conectar a MongoDB:', err));
 
@@ -44,341 +34,255 @@ app.use(express.static(path.join(__dirname, 'Pantallas')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cookieParser());
 
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: 'secretoByteTalk',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGO_URI,
-  }),
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 24,
-    sameSite: 'lax',
-    secure: false,
-    path: '/' 
-  }
+  store: MongoStore.create({ mongoUrl: uri })
 }));
 
-
-///////Endpoints///////
-
-
-// Obtener lista de usuarios
-app.get('/api/usuarios', async (req, res) => {
-  try {
-    const usuarios = await Usuario.find({}, 'nombreUsuario email avatar _id');
-    res.json(usuarios);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Error al obtener usuarios');
-  }
-});
-
-// Página principal (login)
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'LogIn.html'));
-});
-
-// Obtener usuario actual desde la sesión
-app.get('/api/usuario-actual', (req, res) => {
+// Middleware para proteger rutas
+function requireLogin(req, res, next) {
   if (!req.session.usuario) {
-    return res.status(401).json({ error: 'No autenticado' });
+    return res.redirect('/Pantallas/LogIn.html');
   }
-  res.json(req.session.usuario);
+  next();
+}
+
+const mongoose = require('mongoose');
+const Usuario = require('./models/Usuario'); // Asegúrate de que este archivo existe
+
+app.get('/verificar-bd', async (req, res) => {
+  try {
+    const usuarios = await Usuario.find({});
+    res.json({
+      exito: true,
+      cantidad: usuarios.length,
+      usuarios: usuarios.map(u => ({
+        nombre: u.nombre,
+        usuario: u.usuario,
+        correo: u.correo // 👈 Aquí añadimos el correo
+      }))
+    });
+  } catch (error) {
+    console.error('Error al acceder a la base de datos:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al acceder a la base de datos',
+      error: error.message
+    });
+  }
 });
 
-// Inicio de sesión
+
+// LOGIN
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  const usuario = await Usuario.findOne({ email });
-  if (!usuario || !(await usuario.comparePassword(password))) {
-    return res.send('<script>alert("Credenciales inválidas"); window.location.href="/";</script>');
+  try {
+    const usuario = await Usuario.findOne({ email });
+    if (usuario && await usuario.comparePassword(password)) {
+      req.session.usuario = {
+        id: usuario._id,
+        nombreUsuario: usuario.nombreUsuario,
+        nombreCompleto: usuario.nombreCompleto,
+        email: usuario.email
+      };
+      return res.redirect('/chats');
+    } else {
+      return res.send('<script>alert("Credenciales inválidas"); window.location.href="/Pantallas/LogIn.html";</script>');
+    }
+  } catch (err) {
+    console.error('❌ Error en login:', err);
+    return res.status(500).send('<script>alert("Error en el servidor."); window.location.href="/Pantallas/LogIn.html";</script>');
   }
-  req.session.usuario = {
-    _id: usuario._id,
-    nombreUsuario: usuario.nombreUsuario
-  };
-  res.redirect('/Pantallas/Chats.html'); 
 });
 
-// Registro
+// REGISTRO
 app.post('/registro', async (req, res) => {
+  const { nombreCompleto, nombreUsuario, email, password } = req.body;
   try {
-    const nuevoUsuario = new Usuario(req.body);
+    const usuarioExistente = await Usuario.findOne({ email });
+    if (usuarioExistente) {
+      return res.send('<script>alert("Ya existe un usuario con ese correo"); window.location.href="/Pantallas/LogIn.html";</script>');
+    }
+
+    const nuevoUsuario = new Usuario({ nombreCompleto, nombreUsuario, email, password });
     await nuevoUsuario.save();
 
-    req.session.usuario = {
-      _id: nuevoUsuario._id,
-      nombreUsuario: nuevoUsuario.nombreUsuario
-    };
-
-    res.redirect('/Pantallas/Chats.html');
+    return res.send('<script>alert("Usuario registrado correctamente"); window.location.href="/Pantallas/LogIn.html";</script>');
   } catch (err) {
-    console.error(err);
-    res.send('<script>alert("Error al registrarse. Intenta con otro correo o nombre de usuario."); window.location.href="/";</script>');
+    console.error('❌ Error al registrar usuario:', err);
+    return res.status(500).send('<script>alert("Hubo un error en el servidor."); window.location.href="/Pantallas/LogIn.html";</script>');
   }
 });
 
-// Obtener todos los chats del usuario
-app.get('/api/chats', async (req, res) => {
+// Cerrar sesión
+app.get('/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      console.error('Error cerrando sesión:', err);
+      return res.status(500).send('Error al cerrar sesión');
+    }
+    res.redirect('/Pantallas/LogIn.html');
+  });
+});
+
+// Página principal de chats
+app.get('/chats', requireLogin, async (req, res) => {
   try {
-    if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
+    const html = fs.readFileSync(path.join(__dirname, 'Pantallas', 'Chats.html'), 'utf8');
+    const htmlConUsuario = html.replace('{{usuario}}', req.session.usuario.nombreUsuario);
+    res.send(htmlConUsuario);
+  } catch (err) {
+    console.error('❌ Error al cargar Chats.html:', err);
+    res.status(500).send('Error interno');
+  }
+});
 
-    
-    const chats = await Chat.find({ usuarios: req.session.usuario._id }).populate('usuarios', 'nombreUsuario avatar');
-    
-    
-    const individuales = chats.filter(chat => chat.tipo === 'individual').map(chat => {
-      
-      const otroUsuario = chat.usuarios.find(u => u._id.toString() !== req.session.usuario._id.toString());
-      return {
-        _id: chat._id,
-        nombre: otroUsuario?.nombreUsuario || "Usuario desconocido",
-        avatar: otroUsuario?.avatar || "/default-avatar.png"
-      };
-    });
-
-    const grupales = chats.filter(chat => chat.tipo === 'grupo');
-
-    res.json({ individuales, grupales });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al cargar los chats' });
+// Obtener lista de usuarios
+app.get('/api/usuarios', requireLogin, async (req, res) => {
+  try {
+    const usuarios = await Usuario.find({ _id: { $ne: req.session.usuario.id } }, 'nombreUsuario nombreCompleto');
+    res.json(usuarios);
+  } catch (err) {
+    console.error('Error obteniendo usuarios:', err);
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 
 // Crear chat individual
-app.post('/api/chats/individual', async (req, res) => {
-  try {
-    const { receptorId } = req.body;
-    if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
+app.post('/api/chats/individual', requireLogin, async (req, res) => {
+  const userId = req.session.usuario.id;
+  const { receptorId } = req.body;
 
-    const nuevoChat = new Chat({
+  try {
+    const existente = await Chat.findOne({
       tipo: 'individual',
-      usuarios: [req.session.usuario._id, receptorId]
+      participantes: { $all: [userId, receptorId], $size: 2 }
     });
 
+    if (existente) return res.json({ chatId: existente._id });
+
+    const nuevoChat = new Chat({ tipo: 'individual', participantes: [userId, receptorId] });
     await nuevoChat.save();
-
-    io.emit('nuevoChat');
-
-    res.json({ mensaje: 'Chat individual creado', chatId: nuevoChat._id });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al crear chat individual' });
+    res.json({ chatId: nuevoChat._id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error creando chat' });
   }
 });
 
 // Crear chat grupal
-app.post('/api/chats/grupo', async (req, res) => {
-  try {
-    const { nombre, usuarios } = req.body;
-    if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
+app.post('/api/chats/grupo', requireLogin, async (req, res) => {
+  const userId = req.session.usuario.id;
+  const { nombre, usuarios } = req.body;
 
-    if (!usuarios.includes(req.session.usuario._id.toString())) {
-      usuarios.push(req.session.usuario._id.toString());
+  try {
+    if (!nombre || !usuarios || usuarios.length < 2) {
+      return res.status(400).json({ error: 'Datos incompletos para crear grupo' });
     }
 
-    const nuevoGrupo = new Chat({
+    const nuevoChat = new Chat({
       tipo: 'grupo',
       nombre,
-      usuarios
+      participantes: [userId, ...usuarios]
     });
 
-    await nuevoGrupo.save();
-
-    io.emit('nuevoChat');
-
-    res.json({ mensaje: 'Grupo creado', chatId: nuevoGrupo._id });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al crear grupo' });
+    await nuevoChat.save();
+    res.json({ chatId: nuevoChat._id });
+  } catch (err) {
+    console.error('Error creando chat grupal:', err);
+    res.status(500).json({ error: 'Error creando grupo' });
   }
 });
 
-// Enviar mensaje en un chat
-app.post('/api/enviar-mensaje', async (req, res) => {
-  if (!req.session.usuario) return res.status(401).json({ error: 'No autenticado' });
-  const { chatId, texto, cifrado, archivoUrl } = req.body;
+// Guardar mensaje
+app.post('/api/mensajes', requireLogin, async (req, res) => {
+  const userId = req.session.usuario.id;
+  const { chatId, texto } = req.body;
+
   try {
-   
-    const mensajeTexto = cifrado ? encryptMessage(texto) : texto;
+    const mensaje = new Mensaje({ chat: chatId, sender: userId, texto });
+    await mensaje.save();
 
-    const mensajeData = {
-      chat: chatId,
-      sender: req.session.usuario._id,
-      cifrado: cifrado, 
-      archivoUrl: archivoUrl || null
-    };
+    await Chat.findByIdAndUpdate(chatId, { $push: { mensajes: mensaje._id } });
 
-    if (mensajeTexto && mensajeTexto.trim() !== "") {
-      mensajeData.texto = mensajeTexto;
-    }
+    // Emitir mensaje a los sockets conectados
+    io.emit('mensajeRecibido', mensaje);
 
-    const nuevoMensaje = new Mensaje(mensajeData);
-    await nuevoMensaje.save();
-    const mensajeConInfo = await Mensaje.findById(nuevoMensaje._id).populate('sender', 'nombreUsuario');
-
-    
-    if (archivoUrl) {
-      console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario} envió un archivo: ${archivoUrl}`);
-    } else {
-     
-      console.log(`Guardado en servidor: ${mensajeConInfo.sender.nombreUsuario}: ${mensajeTexto}`);
-    }
-
-    
-    io.to(chatId).emit('nuevoMensaje', {
-      ...mensajeConInfo._doc,
-      tipo: archivoUrl ? "archivo" : "texto",
-      
-      contenido: cifrado ? decryptMessage(mensajeTexto) : mensajeTexto,
-      archivoUrl: archivoUrl
-    });
-    res.json(mensajeConInfo);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al enviar mensaje' });
+    res.json(mensaje);
+  } catch (err) {
+    console.error('Error al guardar mensaje:', err);
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 
+//Creación de tareas
+app.post('/crear-tarea', async (req, res) => {
+  const { titulo, descripcion, fecha_entrega, grupoID, puntos } = req.body;
 
-
-
-app.get('/api/chat-info', async (req, res) => {
-  if (!req.session.usuario) {
-    return res.status(401).json({ error: 'No autenticado' });
-  }
-  const { id, tipo } = req.query;
   try {
-    const chat = await Chat.findById(id).populate('usuarios', 'nombreUsuario avatar');
-    if (!chat) {
-      return res.status(404).json({ error: 'Chat no encontrado' });
+    // Validación básica
+    if (!titulo || !fecha_entrega) {
+      return res.send('<script>alert("Título y fecha de entrega son obligatorios."); window.location.href="/Pantallas/CrearTarea.html";</script>');
     }
-    if (tipo === 'individual') {
-      const otroUsuario = chat.usuarios.find(u => u._id.toString() !== req.session.usuario._id.toString());
-      if (!otroUsuario) return res.status(404).json({ error: 'Usuario receptor no encontrado' });
-      return res.json({ 
-        nombre: otroUsuario.nombreUsuario, 
-        avatar: otroUsuario.avatar 
-      });
-    } else {
-      return res.json({ nombre: chat.nombre });
-    }
-  } catch (error) {
-    console.error('Error al obtener info del chat:', error);
-    res.status(500).json({ error: 'Error interno al obtener la información del chat' });
-  }
-});
 
-// Obtener el historial de mensajes del chat
-app.get('/api/mensajes', async (req, res) => {
-  if (!req.session.usuario) {
-    return res.status(401).json({ error: 'No autenticado' });
-  }
-  const { chatId } = req.query;
-  try {
-    const mensajes = await Mensaje.find({ chat: chatId })
-      .populate('sender', 'nombreUsuario')
-      .sort({ fecha: 1 }); // Orden ascendente
-
-    const mensajesFormateados = mensajes.map(mensaje => {
-      const m = mensaje.toObject();
-      if (m.cifrado && typeof m.texto === 'string' && m.texto.trim() !== "") {
-        m.texto = decryptMessage(m.texto);
-      }
-      return m;
+    // Crear y guardar tarea
+    const nuevaTarea = new Tarea({
+      titulo,
+      descripcion,
+      fecha_entrega,
+      grupoID,
+      puntos
     });
 
-    res.json(mensajesFormateados);
-  } catch (error) {
-    console.error('Error al cargar mensajes:', error);
-    res.status(500).json({ error: 'Error interno al obtener los mensajes' });
+    await nuevaTarea.save();
+
+    return res.send('<script>alert("Tarea creada exitosamente."); window.location.href="/Pantallas/CrearTarea.html";</script>');
+  } catch (err) {
+    console.error('❌ Error al crear la tarea:', err);
+    return res.status(500).send('<script>alert("Error en el servidor al crear la tarea."); window.location.href="/Pantallas/CrearTarea.html";</script>');
+  }
+});
+
+//Obtener lista de tareas
+app.get('/api/tareas', async (req, res) => {
+  try {
+    const tareas = await Tarea.find();
+    res.json(tareas);
+  } catch (err) {
+    console.error('❌ Error al obtener tareas:', err);
+    res.status(500).json({ error: 'Error al obtener tareas' });
   }
 });
 
 
+// Obtener mensajes de un chat
+app.get('/api/mensajes/:chatId', requireLogin, async (req, res) => {
+  try {
+    const mensajes = await Mensaje.find({ chat: req.params.chatId }).populate('sender', 'nombreUsuario');
+    res.json(mensajes);
+  } catch (err) {
+    console.error('Error obteniendo mensajes:', err);
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
 
-//Socket.io//
-
-const usuariosConectados = new Map();
-
+// WebSockets
 io.on('connection', (socket) => {
   console.log('🟢 Un usuario se conectó');
 
-  // Permitir que un socket se una a una sala específica 
-  socket.on('joinRoom', (chatId) => {
-    socket.join(chatId);
-    console.log(`Socket ${socket.id} se unió a la sala ${chatId}`);
+  socket.on('mensajeNuevo', (mensaje) => {
+    io.emit('mensajeRecibido', mensaje);
   });
 
-  // Registrar usuario conectado
-  socket.on('usuarioConectado', (nombreUsuario) => {
-    if (usuariosConectados.has(nombreUsuario)) {
-      const socketIdAnterior = usuariosConectados.get(nombreUsuario);
-      io.to(socketIdAnterior).emit('duplicado');
-      const anteriorSocket = io.sockets.sockets.get(socketIdAnterior);
-      if (anteriorSocket) anteriorSocket.disconnect();
-      console.log(`🔁 Usuario ${nombreUsuario} inició sesión en otro lugar. Cerrando la sesión anterior.`);
-    }
-    usuariosConectados.set(nombreUsuario, socket.id);
-    console.log(`✅ ${nombreUsuario} está conectado (${socket.id})`);
-  });
-
-  socket.on("mensaje", async (mensaje) => {
-    if (mensaje.tipo === "archivo") {
-        console.log("📂 Archivo recibido:", mensaje.contenido);
-    }
-
-    io.to(mensaje.chatId).emit("nuevoMensaje", mensaje);  // Enviar el mensaje a los usuarios en el chat correspondiente
-});
-
-
-  // Detectar desconexión y notificar
   socket.on('disconnect', () => {
-    for (const [nombreUsuario, id] of usuariosConectados.entries()) {
-      if (id === socket.id) {
-        usuariosConectados.delete(nombreUsuario);
-        console.log(`🔴 ${nombreUsuario} se desconectó`);
-        break;
-      }
-    }
+    console.log('🔴 Un usuario se desconectó');
   });
-
-///Código nuevo para las videollamadas///
-// Manejadores para el videochat
-socket.on('joinRoom', (roomId) => {
-  socket.join(roomId);
-  console.log(`Socket ${socket.id} se unió a la sala de video: ${roomId}`);
-  // Notifica a los demás que hay un nuevo usuario en la sala.
-  socket.to(roomId).emit('initiateCall');
-});
-
-socket.on('offer', (data) => {
-  // Reenvía la oferta al resto de la sala (excepto quien la envió)
-  console.log(`Recibida oferta de ${socket.id} para la sala ${data.roomId}`);
-  socket.to(data.roomId).emit('offer', data);
-});
-
-socket.on('answer', (data) => {
-  console.log(`Recibida respuesta de ${socket.id} para la sala ${data.roomId}`);
-  socket.to(data.roomId).emit('answer', data);
-});
-
-socket.on('iceCandidate', (data) => {
-  console.log(`Recibido ICE Candidate de ${socket.id} para la sala ${data.roomId}`);
-  socket.to(data.roomId).emit('iceCandidate', data);
-});
-});
-
-// Middleware catch-all
-app.use((req, res, next) => {
-  res.sendFile(path.resolve(__dirname, 'public', 'LogIn.html'));
 });
 
 // Iniciar servidor
 server.listen(PORT, () => {
-  console.log(`🚀 Servidor escuchando en el puerto ${PORT}`);
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
