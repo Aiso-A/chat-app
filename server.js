@@ -131,12 +131,12 @@ app.get('/logout', (req, res) => {
 // Página principal de chats
 app.get('/chats', requireLogin, async (req, res) => {
   try {
-    const html = fs.readFileSync(path.join(__dirname, 'Pantallas', 'Chats.html'), 'utf8');
+    const html = fs.readFileSync(path.join(__dirname, 'public', 'Pantallas', 'Chats.html'), 'utf8');
     const htmlConUsuario = html.replace('{{usuario}}', req.session.usuario.nombreUsuario);
     res.send(htmlConUsuario);
   } catch (err) {
     console.error('❌ Error al cargar Chats.html:', err);
-    res.status(500).send('Errores interno');
+    res.status(500).send('Errores internos');
   }
 });
 
