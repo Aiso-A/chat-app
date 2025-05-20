@@ -357,8 +357,30 @@ app.put('/api/tareas/completar/:id', async (req, res) => {
   }
 });
 
+///Recompenzas//
 
+//Desbloquear nuevo avatar//
+app.put('/api/usuario/revisar-recompensa/:id', async (req, res) => {
+  try {
+    const usuario = await Usuario.findById(req.params.id);
+    if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
 
+    // Calcular si debe desbloquear un avatar nuevo
+    const nuevoNivel = Math.floor(usuario.tareasCompletadas / 5);
+
+    if (nuevoNivel > usuario.avatarActual && nuevoNivel <= 5) {
+      usuario.avatarActual = nuevoNivel;
+      usuario.avatar = `/img/avatar${nuevoNivel}.png`; 
+      await usuario.save();
+
+      res.status(200).json({ mensaje: 'Avatar desbloqueado', avatar: usuario.avatar });
+    } else {
+      res.status(200).json({ mensaje: 'Aún faltan tareas para la siguiente recompensa' });
+    }
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al verificar recompensa', error });
+  }
+});
 
 
 //Socket.io//

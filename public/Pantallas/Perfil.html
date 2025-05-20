@@ -54,6 +54,41 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        async function cargarPerfil() {
+    try {
+        let response = await fetch('/api/usuario-actual');
+        let usuario = await response.json();
 
+        // Mostrar datos en el perfil
+        document.querySelector('.username').textContent = usuario.nombreUsuario;
+        document.querySelector('.full-name').textContent = usuario.nombreCompleto;
+        document.querySelector('.email').textContent = usuario.email;
+        document.querySelector('.profile-avatar').style.backgroundImage = `url(${usuario.avatar})`;
+
+        // Calculamos el progreso para la siguiente recompensa
+        let tareasRestantes = 5 - (usuario.tareasCompletadas % 5);
+        let progreso = (usuario.tareasCompletadas % 5) * 20; // 5 tareas = 100%
+
+        document.querySelector('.progress-bar').style.width = `${progreso}%`;
+        document.querySelector('.progress-bar').textContent = `${progreso}%`;
+        document.querySelector('.progress-text').textContent = `¡Te faltan ${tareasRestantes} tareas para desbloquear la siguiente recompensa!`;
+
+        // Mostrar el avatar a desbloquear como spoiler
+        let siguienteAvatar = usuario.avatarActual + 1;
+        if (siguienteAvatar <= 5) {
+            document.querySelector('.reward-image').style.backgroundImage = `url(/img/avatar${siguienteAvatar}.png)`;
+        } else {
+            document.querySelector('.reward-description').textContent = "¡Has desbloqueado todas las recompensas!";
+        }
+    } catch (error) {
+        console.error("Error al cargar perfil:", error);
+    }
+}
+
+// Ejecutar al cargar el perfil
+document.addEventListener("DOMContentLoaded", cargarPerfil);
+
+    </script>
 </body>
 </html>
