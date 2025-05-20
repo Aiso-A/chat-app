@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 3000;
 const uri = process.env.MONGO_URI;
 
 // Conexión a MongoDB
-mongoose.connect(uri)
+mongoose.connect(uri) //cambiado
   .then(() => console.log('✅ Conectado a MongoDB'))
   .catch((err) => console.error('❌ Error al conectar a MongoDB:', err));
 
@@ -35,11 +35,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+app.set('trust proxy', 1); //cambiado
+
 app.use(session({
   secret: 'secretoByteTalk',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false }, // debe ser false si estás en HTTP
+  cookie: { secure: false }, // debe ser false si estás en HTTP, cambiado
   store: MongoStore.create({ mongoUrl: uri })
 }));
 
@@ -50,7 +52,7 @@ function requireLogin(req, res, next) {
   }
   next();
 }
-
+//cambiado innecesario
 //const mongoose = require('mongoose');
 //const Usuario = require('./models/Usuario'); // Asegúrate de que este archivo existe
 
