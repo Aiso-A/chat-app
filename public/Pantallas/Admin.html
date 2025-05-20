@@ -30,11 +30,10 @@
         
         <section>
             <h2 class="sub-title">Tareas Pendientes</h2>
-            <ul id="tareasPendientes" class="task-list">
-                <li class="task-item">📌 <strong>Revisar informes</strong> <span class="task-date">21/02/2025</span></li>
-                <li class="task-item">📌 <strong>Avance de proyecto</strong> <span class="task-date">22/02/2025</span></li>
-                <li class="task-item">📌 <strong>Propuesta POI</strong> <span class="task-date">23/02/2025</span></li>
-            </ul>
+            <div id="listaTareas">
+                <ul id="mis-Tareas"></ul>  
+            </div>
+            <script src="public/JS/verTareas.js"></script>
         </section>
         
         <section>
@@ -52,6 +51,12 @@
             <h4>Agregar Nueva Tarea</h4>
             <label for="tituloTarea">Título:</label>
             <input type="text" id="tituloTarea">
+            <label for="descTarea">Descripción:</label>
+            <input type="text" id="descTarea">
+            <label for="idGrupoT">Grupo:</label>
+            <input type="number" id="idGrupoT">
+            <label for="punTarea">Título:</label>
+            <input type="number" id="punTarea">
             <label for="fechaLimite">Fecha Límite:</label>
             <input type="date" id="fechaLimite">
             <div class="modal-buttons">
@@ -71,21 +76,29 @@
         });
 
         document.getElementById('guardarTarea').addEventListener('click', function() {
-            let titulo = document.getElementById('tituloTarea').value;
-            let fecha = document.getElementById('fechaLimite').value;
             
-            if (titulo && fecha) {
-                let nuevaTarea = document.createElement('li');
-                nuevaTarea.innerHTML = `📌 <strong>${titulo}</strong> <span class="task-date">${fecha}</span>`;
-                nuevaTarea.classList.add('task-item');
-                nuevaTarea.addEventListener('click', function() {
-                    this.classList.add('completed');
-                    document.getElementById('tareasCompletadas').appendChild(this);
-                    this.innerHTML = `✅ <strong>${titulo}</strong> <span class="task-date">Completado</span>`;
+            const nuevaTarea = {
+            titulo: document.getElementById('tituloTarea').value,
+            descripcion: document.getElementById('descTarea').value || null,
+            fecha_entrega: document.getElementById('fechaLimite').value,
+            grupoID: parseInt(document.getElementById('idGrupoT').value) || null,
+            puntos: parseInt(document.getElementById('punTarea').value) || null
+            };
+
+            fetch('/api/Tareas/crear-tarea', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(nuevaTarea)
+            })
+                .then(res => res.json())
+                .then(data => {
+                alert('Tarea creada con éxito');
+                console.log(data);
+                })
+                .catch(err => {
+                alert('Error al crear la tarea');
+                console.error(err);
                 });
-                document.getElementById('tareasPendientes').appendChild(nuevaTarea);
-                document.getElementById('modalTarea').style.display = 'none';
-            }
         });
     </script>
 </body>
