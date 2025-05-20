@@ -66,9 +66,12 @@
         document.querySelector('.email').textContent = usuario.email;
         document.querySelector('.profile-avatar').style.backgroundImage = `url(${usuario.avatar})`;
 
+        // Asegurar que tareasCompletadas sea un número
+        let tareasCompletadas = usuario.tareasCompletadas || 0;
+
         // Calculamos el progreso para la siguiente recompensa
-        let tareasRestantes = 5 - (usuario.tareasCompletadas % 5);
-        let progreso = (usuario.tareasCompletadas % 5) * 20; // 5 tareas = 100%
+        let tareasRestantes = 5 - (tareasCompletadas % 5);
+        let progreso = (tareasCompletadas % 5) * 20; // 5 tareas = 100%
 
         document.querySelector('.progress-bar').style.width = `${progreso}%`;
         document.querySelector('.progress-bar').textContent = `${progreso}%`;
@@ -85,6 +88,7 @@
         console.error("Error al cargar perfil:", error);
     }
 }
+
 
 // Ejecutar al cargar el perfil
 document.addEventListener("DOMContentLoaded", cargarPerfil);
