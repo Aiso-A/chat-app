@@ -50,7 +50,7 @@ function requireLogin(req, res, next) {
   next();
 }
 
-const mongoose = require('mongoose');
+//const mongoose = require('mongoose');
 const Usuario = require('./models/Usuario'); // Asegúrate de que este archivo existe
 
 app.get('/verificar-bd', async (req, res) => {
