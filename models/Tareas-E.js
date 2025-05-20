@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const getNextSequence = require('./Counter'); // función de autoincremento
+const getNextSequence = require('./Contador'); // función de autoincremento
 
 const tareaEntegradaSchema = new mongoose.Schema({
   idTareaEntegrada: { type: Number, unique: true },
