@@ -12,6 +12,7 @@ require('dotenv').config();
 const Usuario = require('./models/Usuarios');
 const Chat = require('./models/Chat');
 const Mensaje = require('./models/Mensaje');
+const Tarea = require('./models/Tarea');
 
 // <-- NUEVO: Importar simple-encryptor e inicializarlo
 const simpleEncryptor = require('simple-encryptor');
@@ -298,6 +299,65 @@ app.get('/api/mensajes', async (req, res) => {
     res.status(500).json({ error: 'Error interno al obtener los mensajes' });
   }
 });
+
+//Endpoint Tareas
+
+app.post('/api/tareas/crear', async (req, res) => {
+  try {
+    const { usuario, descripcion, fechaVencimiento } = req.body;
+
+    if (!usuario || !descripcion || !fechaVencimiento) {
+      return res.status(400).json({ mensaje: 'Todos los campos son obligatorios' });
+    }
+
+    const nuevaTarea = new Tarea({
+      usuario,
+      descripcion,
+      fechaVencimiento
+    });
+
+    await nuevaTarea.save();
+    res.status(201).json({ mensaje: 'Tarea creada exitosamente', tarea: nuevaTarea });
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al crear la tarea', error });
+  }
+});
+
+//Obtener tareas
+app.get('/api/tareas', async (req, res) => {
+  try {
+    const userId = req.session?.userId || req.headers['usuario-id']; // Ajusta según tu sistema de autenticación
+    if (!userId) return res.status(401).json({ mensaje: 'Usuario no autenticado' });
+
+    const tareas = await Tarea.find({ usuario: userId }); // Filtrar por usuario
+    res.status(200).json(tareas);
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al obtener las tareas', error });
+  }
+});
+
+
+//Completar tareas
+app.put('/api/tareas/completar/:id', async (req, res) => {
+  try {
+    const tarea = await Tarea.findById(req.params.id);
+    if (!tarea) return res.status(404).json({ mensaje: 'Tarea no encontrada' });
+
+    if (tarea.completada) return res.status(400).json({ mensaje: 'La tarea ya está completada' });
+
+    tarea.completada = true;
+    await tarea.save();
+
+    // Incrementar el contador de tareas completadas del usuario
+    await Usuario.findByIdAndUpdate(tarea.usuario, { $inc: { tareasCompletadas: 1 } });
+
+    res.status(200).json({ mensaje: 'Tarea completada exitosamente' });
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al completar la tarea', error });
+  }
+});
+
+
 
 
 

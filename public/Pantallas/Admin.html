@@ -18,8 +18,9 @@
             <li class="nav-item"><a href="/Pantallas/Chats.html" class="nav-link">Volver a Chats</a></li>
             <li class="nav-item"><a href="/Pantallas/Perfil.html" class="nav-link">Perfil</a></li>
             <li class="nav-item"><a href="/Pantallas/Admin.html" class="nav-link">Tareas</a></li>
-            <li class="nav-item"><a href="/Pantallas/LogIn.html" class="nav-link">Cerrar sesión</a></li>
+            <li class="nav-item"><a href="/LogIn.html" class="nav-link">Cerrar sesión</a></li>
         </ul>
+        <p id="username" class="text-light mt-3 ms-3"></p> <!-- Aquí irá el nombre del usuario que inició sesión -->
     </nav>
     
     <div class="main-content">
@@ -31,23 +32,18 @@
         <section>
             <h2 class="sub-title">Tareas Pendientes</h2>
             <ul id="tareasPendientes" class="task-list">
-                <li class="task-item">📌 <strong>Revisar informes</strong> <span class="task-date">21/02/2025</span></li>
-                <li class="task-item">📌 <strong>Avance de proyecto</strong> <span class="task-date">22/02/2025</span></li>
-                <li class="task-item">📌 <strong>Propuesta POI</strong> <span class="task-date">23/02/2025</span></li>
             </ul>
         </section>
         
         <section>
             <h2 class="sub-title">Tareas Completadas</h2>
             <ul id="tareasCompletadas" class="task-list">
-                <li class="task-item completed">✅ <strong>Informe base de datos</strong> <span class="task-date">Completado</span></li>
-                <li class="task-item completed">✅ <strong>Configurar servidor</strong> <span class="task-date">Completado</span></li>
             </ul>
         </section>
     </div>
 
     <!-- Modal para nueva tarea -->
-    <div id="modalTarea" class="modal">
+     <div id="modalTarea" class="modal">
         <div class="modal-content">
             <h4>Agregar Nueva Tarea</h4>
             <label for="tituloTarea">Título:</label>
@@ -61,30 +57,149 @@
         </div>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script>
+
+           let usuarioActual = null;
+           const socket = io();
+
+        // Obtener usuario autenticado
+        fetch('/api/usuario-actual')
+          .then(res => res.json())
+          .then(data => {
+            if (!data || !data._id) {
+              console.warn("⚠️ Usuario no autenticado");
+              window.location.href = "LogIn.html";
+              return;
+            }
+            
+            usuarioActual = data;
+            document.getElementById('username').textContent = data.nombreUsuario;
+            socket.emit('usuarioConectado', data.nombreUsuario);
+
+            cargarTareas(); // Cargar tareas después de obtener el usuario
+          })
+          .catch(err => {
+            console.error('Error al obtener el usuario:', err);
+            window.location.href = "LogIn.html";
+          });
+
+        // Mostrar modal de nueva tarea
         document.getElementById('btnNuevaTarea').addEventListener('click', function() {
             document.getElementById('modalTarea').style.display = 'block';
         });
 
+        // Cerrar modal de nueva tarea
         document.getElementById('cerrarModal').addEventListener('click', function() {
             document.getElementById('modalTarea').style.display = 'none';
         });
 
-        document.getElementById('guardarTarea').addEventListener('click', function() {
+   async function finalizarTarea(tareaId) {
+    try {
+        let response = await fetch(`/api/tareas/completar/${tareaId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        let data = await response.json();
+        if (response.ok) {
+            cargarTareas(); // Refrescar la lista después de completar una tarea
+        } else {
+            alert(data.mensaje);
+        }
+    } catch (error) {
+        alert('Error al completar la tarea');
+    }
+}
+
+async function cargarTareas() {
+    try {
+        let response = await fetch('/api/tareas', {
+            method: 'GET',
+            headers: { 'usuario-id': usuarioActual?._id }
+        });
+
+        let data = await response.json();
+
+        if (response.status === 401) {
+            console.warn("⚠️ Usuario no autenticado. Redirigiendo a LogIn...");
+            window.location.href = "LogIn.html";
+            return;
+        }
+
+        if (!Array.isArray(data)) {
+            console.error("Error: Respuesta inesperada del servidor.", data);
+            return;
+        }
+
+        let listaPendientes = document.getElementById('tareasPendientes');
+        let listaCompletadas = document.getElementById('tareasCompletadas');
+
+        listaPendientes.innerHTML = "";
+        listaCompletadas.innerHTML = "";
+
+        data.forEach(tarea => {
+            let nuevaTarea = document.createElement('li');
+            nuevaTarea.innerHTML = `📌 <strong>${tarea.descripcion}</strong> <span class="task-date">${tarea.fechaVencimiento}</span>`;
+            nuevaTarea.classList.add('task-item');
+
+            let botonFinalizar = document.createElement('button');
+            botonFinalizar.textContent = '✅ Finalizar';
+            botonFinalizar.classList.add('finalizar-btn');
+            botonFinalizar.onclick = () => finalizarTarea(tarea._id);
+
+            if (tarea.completada) {
+                nuevaTarea.classList.add('completed');
+                nuevaTarea.innerHTML = `✅ <strong>${tarea.descripcion}</strong> <span class="task-date">Completado</span>`;
+                listaCompletadas.appendChild(nuevaTarea);
+            } else {
+                nuevaTarea.appendChild(botonFinalizar);
+                listaPendientes.appendChild(nuevaTarea);
+            }
+        });
+    } catch (error) {
+        console.error('Error al cargar las tareas:', error);
+    }
+}
+
+//
+
+document.addEventListener('DOMContentLoaded', cargarTareas);
+
+
+        document.getElementById('guardarTarea').addEventListener('click', async function () {
             let titulo = document.getElementById('tituloTarea').value;
             let fecha = document.getElementById('fechaLimite').value;
-            
+
+            if (!usuarioActual || !usuarioActual._id) {
+                alert("Usuario no autenticado");
+                return;
+            }
+
             if (titulo && fecha) {
-                let nuevaTarea = document.createElement('li');
-                nuevaTarea.innerHTML = `📌 <strong>${titulo}</strong> <span class="task-date">${fecha}</span>`;
-                nuevaTarea.classList.add('task-item');
-                nuevaTarea.addEventListener('click', function() {
-                    this.classList.add('completed');
-                    document.getElementById('tareasCompletadas').appendChild(this);
-                    this.innerHTML = `✅ <strong>${titulo}</strong> <span class="task-date">Completado</span>`;
-                });
-                document.getElementById('tareasPendientes').appendChild(nuevaTarea);
-                document.getElementById('modalTarea').style.display = 'none';
+                const tarea = {
+                    usuario: usuarioActual._id, // Obtener el usuario autenticado
+                    descripcion: titulo,
+                    fechaVencimiento: fecha
+                };
+
+                try {
+                    let response = await fetch('/api/tareas/crear', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(tarea)
+                    });
+
+                    let data = await response.json();
+                    if (response.ok) {
+                        cargarTareas(); // Refrescar la lista de tareas
+                        document.getElementById('modalTarea').style.display = 'none';
+                    } else {
+                        alert(data.mensaje);
+                    }
+                } catch (error) {
+                    alert('Error al crear la tarea');
+                }
             }
         });
     </script>
