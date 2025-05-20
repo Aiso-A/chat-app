@@ -307,6 +307,8 @@ app.get('/api/mensajes', async (req, res) => {
 
 //Endpoint Tareas
 
+//Crear tareas
+// Crear tareas
 app.post('/api/tareas/crear', async (req, res) => {
     try {
         // Obtener el usuario desde la sesión
@@ -320,7 +322,7 @@ app.post('/api/tareas/crear', async (req, res) => {
 
         // Crear la tarea con el usuario autenticado
         const nuevaTarea = new Tarea({
-            usuario,  // Aquí aseguramos que el usuario viene de la sesión
+            usuario,
             descripcion,
             fechaVencimiento
         });
@@ -334,10 +336,11 @@ app.post('/api/tareas/crear', async (req, res) => {
 
 
 //Obtener tareas
-app.get('/api/tareas/:usuarioId', async (req, res) => {
+app.get('/api/tareas', async (req, res) => {
   try {
-    const usuarioId = req.params.usuarioId;
-    if (!usuarioId) return res.status(400).json({ mensaje: 'Usuario no proporcionado' });
+    const usuarioId = req.session.usuario?._id;
+    if (!usuarioId)
+      return res.status(400).json({ mensaje: 'Usuario no autenticado' });
 
     const tareas = await Tarea.find({ usuario: usuarioId });
     res.json(tareas);
@@ -346,6 +349,7 @@ app.get('/api/tareas/:usuarioId', async (req, res) => {
     res.status(500).json({ mensaje: 'Error al obtener las tareas', error });
   }
 });
+
 
 
 //Completar tareas

@@ -116,7 +116,7 @@ async function cargarTareas() {
     try {
         let response = await fetch('/api/tareas', {
             method: 'GET',
-            headers: { 'usuario-id': usuarioActual?._id }
+            headers: { 'Content-Type': 'application/json' } // Ya no es necesario enviar 'usuario-id'
         });
 
         let data = await response.json();
@@ -162,49 +162,49 @@ async function cargarTareas() {
     }
 }
 
+
 //
 
 document.addEventListener('DOMContentLoaded', cargarTareas);
 
 
-        document.getElementById('guardarTarea').addEventListener('click', async function () {
-            let titulo = document.getElementById('tituloTarea').value;
-            let fecha = document.getElementById('fechaLimite').value;
-
+      document.getElementById('guardarTarea').addEventListener('click', async function () {
+    let titulo = document.getElementById('tituloTarea').value;
+    let fecha = document.getElementById('fechaLimite').value;
 
     console.log("Usuario antes de enviar tarea:", usuarioActual); 
 
-            if (!usuarioActual || !usuarioActual._id) {
-                alert("Usuario no autenticado");
-                return;
+    if (!usuarioActual || !usuarioActual._id) {
+        alert("Usuario no autenticado");
+        return;
+    }
+
+    if (titulo && fecha) {
+        const tarea = {
+            usuario: usuarioActual._id, // Este dato se podrá omitir en el backend, ya que se obtiene de la sesión
+            descripcion: titulo,
+            fechaVencimiento: fecha
+        };
+
+        try {
+            let response = await fetch('/api/tareas/crear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(tarea)
+            });
+
+            let data = await response.json();
+            if (response.ok) {
+                cargarTareas(); // Refrescar la lista de tareas
+                document.getElementById('modalTarea').style.display = 'none';
+            } else {
+                alert(data.mensaje);
             }
-
-            if (titulo && fecha) {
-                const tarea = {
-                    usuario: usuarioActual._id, // Obtener el usuario autenticado
-                    descripcion: titulo,
-                    fechaVencimiento: fecha
-                };
-
-                try {
-                    let response = await fetch('/api/tareas/crear', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(tarea)
-                    });
-
-                    let data = await response.json();
-                    if (response.ok) {
-                        cargarTareas(); // Refrescar la lista de tareas
-                        document.getElementById('modalTarea').style.display = 'none';
-                    } else {
-                        alert(data.mensaje);
-                    }
-                } catch (error) {
-                    alert('Error al crear la tarea');
-                }
-            }
-        });
+        } catch (error) {
+            alert('Error al crear la tarea');
+        }
+    }
+});
     </script>
 </body>
 </html>
