@@ -78,55 +78,59 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        // Consulta al endpoint para obtener la información actual del usuario.
-        fetch("/api/usuario-actual")
-          .then((response) => response.json())
-          .then((usuario) => {
-            
-            // Actualiza el nombre de usuario
-            document.getElementById("username").textContent = usuario.nombreUsuario || "";
-            
-            // Actualiza el nombre completo
-            document.getElementById("full-name").textContent = usuario.nombreCompleto || "";
-            
-            // Actualiza el correo electrónico
-            document.getElementById("email").textContent = usuario.email || "";
+  function updateProfileData() {
+    fetch("/api/usuario-actual")
+      .then((response) => response.json())
+      .then((usuario) => {
+        // Actualizar datos de texto
+        document.getElementById("username").textContent = usuario.nombreUsuario || "";
+        document.getElementById("full-name").textContent = usuario.nombreCompleto || "";
+        document.getElementById("email").textContent = usuario.email || "";
 
-            // Si usuario.tareasCompletadas es indefinido, se asume 0.
-            let tareasCompletadas = usuario.tareasCompletadas || 0;
+        // Número de tareas completadas (por defecto 0)
+        let tareasCompletadas = usuario.tareasCompletadas || 0;
 
-            // Calcula el índice de recompensa:
-            let rewardIndex = Math.floor(tareasCompletadas / 5) + 1;
-            if (rewardIndex < 1) rewardIndex = 1;
-            if (rewardIndex > 5) rewardIndex = 5;
+        
+        let unlockedAvatarIndex = tareasCompletadas === 0 ? 0 : Math.floor(tareasCompletadas / 5);
+        if (unlockedAvatarIndex > 5) unlockedAvatarIndex = 5;
 
-            // Actualiza la imagen del avatar a la recompensa actual.
-              // Construir la URL del avatar
-        const avatarURL = `/img/Avatar${rewardIndex}.png`;
+       
+        let nextAvatarIndex = unlockedAvatarIndex < 5 ? unlockedAvatarIndex + 1 : 5;
+        
+        
+        const profileAvatarURL = `/img/Avatar${unlockedAvatarIndex}.png`;
+        document.getElementById("profile-img").src = profileAvatarURL;
+        
+       
+        const rewardAvatarURL = `/img/Avatar${nextAvatarIndex}.png`;
+        document.getElementById("user-avatar").src = rewardAvatarURL;
+        
 
-        // Actualiza ambos elementos de imagen
-        document.getElementById("user-avatar").src = avatarURL;
-        document.getElementById("profile-img").src = avatarURL;
-
-            // Calcula cuántas tareas faltan para desbloquear la siguiente imagen.
-             const mod = tareasCompletadas % 5;
-            const tareasRestantes = mod === 0 ? 5 : 5 - mod;
-
-            // Actualiza el mensaje dinámico.
-            document.getElementById("reward-message").textContent =
-              "Completa " +
-              tareasRestantes +
-              " tarea(s) para desbloquear la siguiente imagen";
-          })
-          .catch((error) => {
-            console.error("Error al obtener datos del usuario:", error);
-            // En caso de error, se deja el valor por defecto.
-            document.getElementById("user-avatar").src = "/img/Avatar1.png";
-            document.getElementById("reward-message").textContent =
-              "Completa 5 tareas para desbloquear la siguiente imagen";
-          });
+        if (unlockedAvatarIndex < 5) {
+          const mod = tareasCompletadas % 5;
+          const tareasRestantes = mod === 0 ? 5 : 5 - mod;
+          document.getElementById("reward-message").textContent =
+            "Completa " + tareasRestantes + " tarea(s) para desbloquear la siguiente imagen";
+        } else {
+          document.getElementById("reward-message").textContent =
+            "¡Has desbloqueado todos los avatares!";
+        }
+      })
+      .catch((error) => {
+        console.error("Error al obtener datos del usuario:", error);
+        // Valores de fallback en caso de error
+        document.getElementById("profile-img").src = "/img/Avatar0.png";
+        document.getElementById("user-avatar").src = "/img/Avatar1.png";
+        document.getElementById("reward-message").textContent =
+          "Completa 5 tareas para desbloquear la siguiente imagen";
       });
-    </script>
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    updateProfileData();
+    // Actualiza periódicamente para reflejar cambios sin refresh.
+    setInterval(updateProfileData, 10000); // cada 10 segundos
+  });
+</script>
   </body>
 </html>
