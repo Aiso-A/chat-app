@@ -1,59 +1,119 @@
 <!DOCTYPE html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>ByteTalk - LogIn</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-        <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Exo+2:wght@800&family=Saira+Stencil+One&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="/Perfil.css">
-        <link rel="stylesheet" href="/Sidebar.css">
-        <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">       
-    </head>
-<body>
-
-     <!-- Menú lateral -->
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ByteTalk - Perfil</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Exo+2:wght@800&family=Saira+Stencil+One&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/Perfil.css" />
+    <link rel="stylesheet" href="/Sidebar.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
+    />
+  </head>
+  <body>
+    <!-- Menú lateral -->
     <nav class="sidebar d-flex flex-column p-3">
-        <h2 class="app-title text-center">ByteTalk</h2>
-        <ul class="nav flex-column">
-            <li class="nav-item"><a href="/Pantallas/Chats.html" class="nav-link">Volver a Chats</a></li>
-            <li class="nav-item"><a href="/Pantallas/Perfil.html" class="nav-link">Perfil</a></li>
-            <li class="nav-item"><a href="/Pantallas/Admin.html" class="nav-link">Tareas</a></li>
-            <li class="nav-item"><a href="//LogIn.html" class="nav-link">Cerrar sesión</a></li>
-        </ul>
+      <h2 class="app-title text-center">ByteTalk</h2>
+      <ul class="nav flex-column">
+        <li class="nav-item">
+          <a href="/Pantallas/Chats.html" class="nav-link">Volver a Chats</a>
+        </li>
+        <li class="nav-item">
+          <a href="/Pantallas/Perfil.html" class="nav-link">Perfil</a>
+        </li>
+        <li class="nav-item">
+          <a href="/Pantallas/Admin.html" class="nav-link">Tareas</a>
+        </li>
+        <li class="nav-item">
+          <a href="/LogIn.html" class="nav-link">Cerrar sesión</a>
+        </li>
+      </ul>
     </nav>
 
     <div class="container profile-container">
-        
-        <!-- Sección de Perfil -->
-        <div class="profile-header text-center">
-            <div class="profile-avatar"></div> 
-            <h2 class="username">MaSanti_93</h2> 
-            <p class="full-name">Marco Santiago Gomez Martines</p> 
-            <p class="email">POIPrueba@gmail.com</p> 
-            <span class="status online">● Activo</span>
+      <!-- Sección de Perfil -->
+      <div class="profile-header text-center">
+        <div class="profile-avatar">
+          <!-- Aquí podrías mostrar otra imagen o dejarlo vacío -->
         </div>
+        <h2 class="username">MaSanti_93</h2>
+        <p class="full-name">Marco Santiago Gomez Martines</p>
+        <p class="email">POIPrueba@gmail.com</p>
+        <span class="status online">● Activo</span>
+      </div>
 
-        <!-- Sección de Recompensas -->
-        <div class="rewards-section">
-            <h3 class="section-title">🎉 Recompensas</h3>
-            <div class="progress-container">
-                <div class="progress">
-                    <div class="progress-bar" style="width: 40%;">40%</div> <!-- Barra de progreso -->
-                </div>
-                <p class="progress-text">¡Completa 6 tareas más para el siguiente nivel!</p>
-            </div>
+      <!-- Sección de Recompensas -->
+      <div class="rewards-section">
+        <h3 class="section-title">🎉 Recompensas</h3>
 
-            
-            <div class="reward">
-                <div class="reward-image"></div>
-                <p class="reward-description">Avatar exclusivo desbloqueado</p>
-            </div>
+        <!-- Se muestra un mensaje dinámico según las tareas completadas -->
+        <p id="reward-message" class="progress-text">
+          Completa 5 tareas para desbloquear la siguiente imagen
+        </p>
+
+        <div class="reward">
+          <!-- La imagen se actualizará según la recompensa actual -->
+          <img
+            id="user-avatar"
+            class="reward-image"
+            src="/img/Avatar1.png"
+            alt="Avatar del Usuario"
+          />
+          <p class="reward-description">Avatar exclusivo desbloqueado</p>
         </div>
-
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // Consulta al endpoint para obtener la información actual del usuario.
+        fetch("/api/usuario-actual")
+          .then((response) => response.json())
+          .then((usuario) => {
+            // Si usuario.tareasCompletadas es indefinido, se asume 0.
+            let tareasCompletadas = usuario.tareasCompletadas || 0;
 
-</body>
+            // Calcula el índice de recompensa:
+            // Para 0 tareas: Math.floor(0/5) + 1 === 1, es decir, Avatar1.png
+            // Cada 5 tareas se incrementa el índice, hasta un máximo de 5.
+            let rewardIndex = Math.floor(tareasCompletadas / 5) + 1;
+            if (rewardIndex < 1) rewardIndex = 1;
+            if (rewardIndex > 5) rewardIndex = 5;
+
+            // Actualiza la imagen del avatar a la recompensa actual.
+            const avatarURL = `/img/Avatar${rewardIndex}.png`;
+            document.getElementById("user-avatar").src = avatarURL;
+
+            // Calcula cuántas tareas faltan para desbloquear la siguiente imagen.
+            // Si el usuario tiene un resto de tareas completadas en el ciclo (módulo 5),
+            // se calcula cuántas faltan. Si ya está justo en un múltiplo (0), se mostrará 5.
+            const mod = tareasCompletadas % 5;
+            const tareasRestantes = mod === 0 ? 5 : 5 - mod;
+
+            // Actualiza el mensaje dinámico.
+            document.getElementById("reward-message").textContent =
+              "Completa " +
+              tareasRestantes +
+              " tarea(s) para desbloquear la siguiente imagen";
+          })
+          .catch((error) => {
+            console.error("Error al obtener datos del usuario:", error);
+            // En caso de error, se deja el valor por defecto.
+            document.getElementById("user-avatar").src = "/img/Avatar1.png";
+            document.getElementById("reward-message").textContent =
+              "Completa 5 tareas para desbloquear la siguiente imagen";
+          });
+      });
+    </script>
+  </body>
 </html>

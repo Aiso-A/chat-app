@@ -83,11 +83,23 @@ app.get('/', (req, res) => {
 });
 
 // Obtener usuario actual desde la sesión
-app.get('/api/usuario-actual', (req, res) => {
+/*app.get('/api/usuario-actual', (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ error: 'No autenticado' });
   }
   res.json(req.session.usuario);
+});*/
+app.get('/api/usuario-actual', async (req, res) => {
+  if (!req.session.usuario) {
+    return res.status(401).json({ mensaje: 'No autenticado' });
+  }
+  // Opcional: Si deseas que la información esté actualizada, puedes buscar en la base usando el id:
+  try {
+    const usuario = await Usuario.findById(req.session.usuario._id);
+    res.json(usuario);
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al obtener los datos del usuario', error });
+  }
 });
 
 // Inicio de sesión
@@ -305,17 +317,14 @@ app.get('/api/mensajes', async (req, res) => {
 app.post('/api/tareas/crear', async (req, res) => {
   try {
     const { usuario, descripcion, fechaVencimiento } = req.body;
-
     if (!usuario || !descripcion || !fechaVencimiento) {
       return res.status(400).json({ mensaje: 'Todos los campos son obligatorios' });
     }
-
     const nuevaTarea = new Tarea({
       usuario,
       descripcion,
       fechaVencimiento
     });
-
     await nuevaTarea.save();
     res.status(201).json({ mensaje: 'Tarea creada exitosamente', tarea: nuevaTarea });
   } catch (error) {
@@ -326,36 +335,63 @@ app.post('/api/tareas/crear', async (req, res) => {
 //Obtener tareas
 app.get('/api/tareas', async (req, res) => {
   try {
-    const userId = req.session?.userId || req.headers['usuario-id']; // Ajusta según tu sistema de autenticación
+    // Se obtiene el usuario desde la sesión o encabezado
+    const userId = req.session?.usuario?._id || req.headers['usuario-id'];
     if (!userId) return res.status(401).json({ mensaje: 'Usuario no autenticado' });
-
-    const tareas = await Tarea.find({ usuario: userId }); // Filtrar por usuario
+    const tareas = await Tarea.find({ usuario: userId });
     res.status(200).json(tareas);
   } catch (error) {
     res.status(500).json({ mensaje: 'Error al obtener las tareas', error });
   }
 });
 
-
 //Completar tareas
 app.put('/api/tareas/completar/:id', async (req, res) => {
   try {
+    // Buscar la tarea a partir del id
     const tarea = await Tarea.findById(req.params.id);
     if (!tarea) return res.status(404).json({ mensaje: 'Tarea no encontrada' });
-
     if (tarea.completada) return res.status(400).json({ mensaje: 'La tarea ya está completada' });
-
+    
+    // Marcar la tarea como completada y guardar
     tarea.completada = true;
     await tarea.save();
-
-    // Incrementar el contador de tareas completadas del usuario
-    await Usuario.findByIdAndUpdate(tarea.usuario, { $inc: { tareasCompletadas: 1 } });
-
-    res.status(200).json({ mensaje: 'Tarea completada exitosamente' });
+    
+    // Buscar el usuario dueño de la tarea y actualizar su contador
+    const usuario = await Usuario.findById(tarea.usuario);
+    if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+    usuario.tareasCompletadas++;
+    
+    // Lógica para actualizar el avatar:
+    // Cada 5 tareas completadas se asigna un avatar nuevo (Avatar1.png a Avatar5.png)
+    let rewardUpdated = false;
+    if (usuario.tareasCompletadas % 5 === 0) {
+      const rewardNumber = usuario.tareasCompletadas / 5;
+      if (rewardNumber <= 5) {
+        usuario.avatar = `/img/Avatar${rewardNumber}.png`;
+        rewardUpdated = true;
+      }
+    }
+    await usuario.save();
+    
+    // Calculamos cuántas tareas faltan para la siguiente recompensa.
+    // En cada ciclo de 5 tareas, por ejemplo si el usuario ha completado 7, se han completado 2 en el ciclo actual.
+    const mod = usuario.tareasCompletadas % 5;
+    const tareasRestantes = mod === 0 ? 5 : 5 - mod;
+    
+    res.status(200).json({
+      mensaje: 'Tarea completada exitosamente',
+      rewardUpdated, // True si se actualizó el avatar en este llamado
+      tareasCompletadas: usuario.tareasCompletadas,
+      avatar: usuario.avatar,
+      tareasParaSiguiente: tareasRestantes
+    });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ mensaje: 'Error al completar la tarea', error });
   }
 });
+
 
 
 
