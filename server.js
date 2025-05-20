@@ -138,6 +138,11 @@ app.get('/logout', (req, res) => {
   });
 });
 
+//no habia usuario actual para chats
+app.get('/api/usuario-actual', requireLogin, (req, res) => {
+  res.json(req.session.usuario);
+});
+
 // Página principal de chats
 app.get('/chats', requireLogin, async (req, res) => {
   try {
