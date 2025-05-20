@@ -94,21 +94,27 @@
             }
         }
 
-        async function verificarRecompensa(userId) {
-            try {
-                let response = await fetch(`/api/usuario/revisar-recompensa/${userId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' }
-                });
+    async function verificarRecompensa(userId) {
+    try {
+        let response = await fetch(`/api/usuario/revisar-recompensa/${userId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' }
+        });
 
-                let data = await response.json();
-                if (data.avatar) {
-                    document.querySelector('.profile-avatar').style.backgroundImage = `url(${data.avatar})`;
-                }
-            } catch (error) {
-                console.error("Error al verificar recompensa:", error);
-            }
+        if (!response.ok) {
+            console.warn("⚠️ No se pudo verificar la recompensa:", response.status);
+            return;
         }
+
+        let data = await response.json();
+        if (data.avatar) {
+            document.querySelector('.profile-avatar').style.backgroundImage = `url(${data.avatar})`;
+        }
+    } catch (error) {
+        console.error("Error al verificar recompensa:", error);
+    }
+}
+
 
         document.addEventListener("DOMContentLoaded", cargarPerfil);
     </script>

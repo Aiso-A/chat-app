@@ -376,6 +376,28 @@ app.put('/api/tareas/completar/:id', async (req, res) => {
 });
 
 
+app.put('/api/usuario/revisar-recompensa/:id', async (req, res) => {
+  try {
+    const usuario = await Usuario.findById(req.params.id);
+    if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+
+    const nuevoNivel = Math.floor(usuario.tareasCompletadas / 5);
+
+    if (nuevoNivel > usuario.nivelRecompensa && nuevoNivel <= 5) { // Máximo 5 avatares disponibles
+      usuario.nivelRecompensa = nuevoNivel;
+      usuario.avatar = `/img/avatar${nuevoNivel}.png`; 
+      await usuario.save();
+
+      return res.status(200).json({ mensaje: 'Avatar desbloqueado', avatar: usuario.avatar });
+    }
+
+    res.status(200).json({ mensaje: 'Aún faltan tareas para la siguiente recompensa' });
+  } catch (error) {
+    console.error("Error interno al verificar recompensa:", error);
+    res.status(500).json({ mensaje: 'Error al verificar recompensa', error });
+  }
+});
+
 
 
 
