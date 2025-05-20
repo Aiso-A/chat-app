@@ -79,14 +79,14 @@
         document.getElementById('guardarTarea').addEventListener('click', function() {
             
             const nuevaTarea = {
-            titulo: document.getElementById('titulo').value,
-            descripcion: document.getElementById('descripcion').value || null,
-            fecha_entrega: document.getElementById('fecha_entrega').value,
-            grupoID: parseInt(document.getElementById('grupoID').value) || null,
-            puntos: parseInt(document.getElementById('puntos').value) || null
+            titulo: document.getElementById('tituloTarea').value,
+            descripcion: document.getElementById('descTarea').value || null,
+            fecha_entrega: document.getElementById('fechaLimite').value,
+            grupoID: parseInt(document.getElementById('idGrupoT').value) || null,
+            puntos: parseInt(document.getElementById('punTarea').value) || null
             };
 
-            fetch('/api/tareas/crear', {
+            fetch('/api/Tareas/crear-tarea', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(nuevaTarea)
