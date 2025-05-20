@@ -134,6 +134,7 @@
         usuarioActual = data;
         document.getElementById('username').textContent = data.nombreUsuario;
         socket.emit('usuarioConectado', data.nombreUsuario);
+        console.log('fetch en chats:', req.session.usuario);
 
         cargarUsuarios();
         cargarChats();  
