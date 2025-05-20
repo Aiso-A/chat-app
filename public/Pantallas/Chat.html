@@ -155,7 +155,7 @@
 }
 
 
-    // 🔒 Cifrado opcional
+    // Cifrado opcional
     let cifradoActivo = false;
 
     document.getElementById('toggleEncryption').addEventListener('click', () => {
@@ -221,7 +221,7 @@ async function enviarArchivo() {
         chatId: chatId
     });
 
-//Ahora también envía el archivo al servidor para guardarlo
+
 await fetch("/api/enviar-mensaje", {
     method: "POST",
     headers: {
@@ -229,7 +229,7 @@ await fetch("/api/enviar-mensaje", {
     },
     body: JSON.stringify({
         chatId: chatId,
-        texto: "", //Mensaje vacío porque es un archivo
+        texto: "",
         archivoUrl: urlArchivo
     })
 });
@@ -237,7 +237,7 @@ await fetch("/api/enviar-mensaje", {
     console.log("📂 Archivo subido:", urlArchivo);
 }
 
-//Muestra mensajes de texto o archivos (imágenes o enlaces)
+
 socket.on("nuevoMensaje", (mensaje) => {
   const mensajesDiv = document.getElementById('mensajes');
   const div = document.createElement('div');
@@ -245,7 +245,7 @@ socket.on("nuevoMensaje", (mensaje) => {
 
   const sender = mensaje.sender?.nombreUsuario || "Desconocido";
 
-  // Manejo de archivos adjuntos con archivoUrl
+  
   if (mensaje.archivoUrl) {
     const extension = mensaje.archivoUrl.split('.').pop().toLowerCase();
     if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
@@ -256,7 +256,7 @@ socket.on("nuevoMensaje", (mensaje) => {
       <a href="${mensaje.archivoUrl}" target="_blank">📂 Ver archivo adjunto</a>`;
     }
   } 
-  // Manejo de mensajes de texto
+  
   else if (mensaje.tipo === "texto" && mensaje.contenido.trim() !== "") {
     div.innerHTML = `<strong>${sender}:</strong> ${mensaje.contenido}`;
   } else {
@@ -269,7 +269,7 @@ socket.on("nuevoMensaje", (mensaje) => {
 });
 
 
-//Botón para iniciar videollamada
+
 document.getElementById('startVideoCall').addEventListener('click', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const chatId = urlParams.get('id');

@@ -14,7 +14,7 @@ const Chat = require('./models/Chat');
 const Mensaje = require('./models/Mensaje');
 const Tarea = require('./models/Tarea');
 
-// <-- NUEVO: Importar simple-encryptor e inicializarlo
+//simple-encryptor
 const simpleEncryptor = require('simple-encryptor');
 const secretKey = process.env.ENCRYPTION_KEY || 'default_secret_key';
 const encryptor = simpleEncryptor(secretKey);
@@ -83,12 +83,6 @@ app.get('/', (req, res) => {
 });
 
 // Obtener usuario actual desde la sesión
-/*app.get('/api/usuario-actual', (req, res) => {
-  if (!req.session.usuario) {
-    return res.status(401).json({ error: 'No autenticado' });
-  }
-  res.json(req.session.usuario);
-});*/
 app.get('/api/usuario-actual', async (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ mensaje: 'No autenticado' });
@@ -295,7 +289,7 @@ app.get('/api/mensajes', async (req, res) => {
   try {
     const mensajes = await Mensaje.find({ chat: chatId })
       .populate('sender', 'nombreUsuario')
-      .sort({ fecha: 1 }); // Orden ascendente
+      .sort({ fecha: 1 }); 
 
     const mensajesFormateados = mensajes.map(mensaje => {
       const m = mensaje.toObject();
@@ -328,7 +322,6 @@ app.post('/api/tareas/crear', async (req, res) => {
     res.status(201).json({ mensaje: 'Tarea creada exitosamente', tarea: nuevaTarea });
   } catch (error) {
     console.error("Error al crear la tarea:", error);
-    // Registra error.message y error.stack para más detalles
     res.status(500).json({ mensaje: 'Error al crear la tarea', error: error.message });
   }
 });
@@ -337,7 +330,6 @@ app.post('/api/tareas/crear', async (req, res) => {
 //Obtener tareas
 app.get('/api/tareas', async (req, res) => {
   try {
-    // Se obtiene el usuario desde la sesión o encabezado
     const userId = req.session?.usuario?._id || req.headers['usuario-id'];
     if (!userId) return res.status(401).json({ mensaje: 'Usuario no autenticado' });
     const tareas = await Tarea.find({ usuario: userId });
@@ -350,22 +342,20 @@ app.get('/api/tareas', async (req, res) => {
 //Completar tareas
 app.put('/api/tareas/completar/:id', async (req, res) => {
   try {
-    // Buscar la tarea a partir del id
+    
     const tarea = await Tarea.findById(req.params.id);
     if (!tarea) return res.status(404).json({ mensaje: 'Tarea no encontrada' });
     if (tarea.completada) return res.status(400).json({ mensaje: 'La tarea ya está completada' });
     
-    // Marcar la tarea como completada y guardar
+   
     tarea.completada = true;
     await tarea.save();
     
-    // Buscar el usuario dueño de la tarea y actualizar su contador
+    
     const usuario = await Usuario.findById(tarea.usuario);
     if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     usuario.tareasCompletadas++;
     
-    // Lógica para actualizar el avatar:
-    // Cada 5 tareas completadas se asigna un avatar nuevo (Avatar1.png a Avatar5.png)
     let rewardUpdated = false;
     if (usuario.tareasCompletadas % 5 === 0) {
       const rewardNumber = usuario.tareasCompletadas / 5;
@@ -376,14 +366,12 @@ app.put('/api/tareas/completar/:id', async (req, res) => {
     }
     await usuario.save();
     
-    // Calculamos cuántas tareas faltan para la siguiente recompensa.
-    // En cada ciclo de 5 tareas, por ejemplo si el usuario ha completado 7, se han completado 2 en el ciclo actual.
     const mod = usuario.tareasCompletadas % 5;
     const tareasRestantes = mod === 0 ? 5 : 5 - mod;
     
     res.status(200).json({
       mensaje: 'Tarea completada exitosamente',
-      rewardUpdated, // True si se actualizó el avatar en este llamado
+      rewardUpdated, 
       tareasCompletadas: usuario.tareasCompletadas,
       avatar: usuario.avatar,
       tareasParaSiguiente: tareasRestantes
@@ -430,7 +418,7 @@ io.on('connection', (socket) => {
         console.log("📂 Archivo recibido:", mensaje.contenido);
     }
 
-    io.to(mensaje.chatId).emit("nuevoMensaje", mensaje);  // Enviar el mensaje a los usuarios en el chat correspondiente
+    io.to(mensaje.chatId).emit("nuevoMensaje", mensaje);  
 });
 
 
@@ -445,17 +433,14 @@ io.on('connection', (socket) => {
     }
   });
 
-///Código nuevo para las videollamadas///
-// Manejadores para el videochat
+
 socket.on('joinRoom', (roomId) => {
   socket.join(roomId);
   console.log(`Socket ${socket.id} se unió a la sala de video: ${roomId}`);
-  // Notifica a los demás que hay un nuevo usuario en la sala.
   socket.to(roomId).emit('initiateCall');
 });
 
 socket.on('offer', (data) => {
-  // Reenvía la oferta al resto de la sala (excepto quien la envió)
   console.log(`Recibida oferta de ${socket.id} para la sala ${data.roomId}`);
   socket.to(data.roomId).emit('offer', data);
 });

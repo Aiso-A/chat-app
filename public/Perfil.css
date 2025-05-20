@@ -4,14 +4,16 @@ body {
   color: #fff;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: flex; 
 }
 
+.sidebar {
+  flex-shrink: 0; 
+}
+
+
 .profile-container {
-  width: 80%;
+  flex-grow: 1; 
   max-width: 800px;
   margin: 30px auto;
   padding: 30px;

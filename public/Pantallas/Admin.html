@@ -20,7 +20,7 @@
             <li class="nav-item"><a href="/Pantallas/Admin.html" class="nav-link">Tareas</a></li>
             <li class="nav-item"><a href="/LogIn.html" class="nav-link">Cerrar sesión</a></li>
         </ul>
-        <p id="username" class="text-light mt-3 ms-3"></p> <!-- Aquí irá el nombre del usuario que inició sesión -->
+        <p id="username" class="text-light mt-3 ms-3"></p> 
     </nav>
     
     <div class="main-content">
@@ -63,7 +63,6 @@
            let usuarioActual = null;
            const socket = io();
 
-        // Obtener usuario autenticado
         fetch('/api/usuario-actual')
           .then(res => res.json())
           .then(data => {
@@ -77,19 +76,18 @@
             document.getElementById('username').textContent = data.nombreUsuario;
             socket.emit('usuarioConectado', data.nombreUsuario);
 
-            cargarTareas(); // Cargar tareas después de obtener el usuario
+            cargarTareas(); 
           })
           .catch(err => {
             console.error('Error al obtener el usuario:', err);
             window.location.href = "LogIn.html";
           });
 
-        // Mostrar modal de nueva tarea
         document.getElementById('btnNuevaTarea').addEventListener('click', function() {
             document.getElementById('modalTarea').style.display = 'block';
         });
 
-        // Cerrar modal de nueva tarea
+
         document.getElementById('cerrarModal').addEventListener('click', function() {
             document.getElementById('modalTarea').style.display = 'none';
         });
@@ -103,7 +101,7 @@
 
         let data = await response.json();
         if (response.ok) {
-            cargarTareas(); // Refrescar la lista después de completar una tarea
+            cargarTareas(); 
         } else {
             alert(data.mensaje);
         }
@@ -178,7 +176,7 @@ document.addEventListener('DOMContentLoaded', cargarTareas);
 
             if (titulo && fecha) {
                 const tarea = {
-                    usuario: usuarioActual._id, // Obtener el usuario autenticado
+                    usuario: usuarioActual._id, 
                     descripcion: titulo,
                     fechaVencimiento: fecha
                 };
@@ -192,7 +190,7 @@ document.addEventListener('DOMContentLoaded', cargarTareas);
 
                     let data = await response.json();
                     if (response.ok) {
-                        cargarTareas(); // Refrescar la lista de tareas
+                        cargarTareas(); 
                         document.getElementById('modalTarea').style.display = 'none';
                     } else {
                         alert(data.mensaje);
