@@ -12,6 +12,10 @@ require('dotenv').config();
 const Usuario = require('./models/Usuarios');
 const Chat = require('./models/Chat');
 const Mensaje = require('./models/Mensaje');
+// Tareas agregado
+const Tareas = require('./models/Tareas');
+const TareasE = require('./models/Tareas-E');
+const Counter = require('./models/Contador');
 
 const app = express();
 const server = http.createServer(app);
@@ -213,6 +217,35 @@ app.post('/api/mensajes', requireLogin, async (req, res) => {
     res.status(500).json({ error: 'Error interno' });
   }
 });
+
+//Creación de tareas
+app.post('/crear-tarea', async (req, res) => {
+  const { titulo, descripcion, fecha_entrega, grupoID, puntos } = req.body;
+
+  try {
+    // Validación básica
+    if (!titulo || !fecha_entrega) {
+      return res.send('<script>alert("Título y fecha de entrega son obligatorios."); window.location.href="/Pantallas/CrearTarea.html";</script>');
+    }
+
+    // Crear y guardar tarea
+    const nuevaTarea = new Tarea({
+      titulo,
+      descripcion,
+      fecha_entrega,
+      grupoID,
+      puntos
+    });
+
+    await nuevaTarea.save();
+
+    return res.send('<script>alert("Tarea creada exitosamente."); window.location.href="/Pantallas/CrearTarea.html";</script>');
+  } catch (err) {
+    console.error('❌ Error al crear la tarea:', err);
+    return res.status(500).send('<script>alert("Error en el servidor al crear la tarea."); window.location.href="/Pantallas/CrearTarea.html";</script>');
+  }
+});
+
 
 // Obtener mensajes de un chat
 app.get('/api/mensajes/:chatId', requireLogin, async (req, res) => {
