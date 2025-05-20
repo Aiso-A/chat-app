@@ -93,6 +93,9 @@
             // Actualiza el correo electrónico
             document.getElementById("email").textContent = usuario.email || "";
 
+            //Actualiza la imagen de perfil
+            document.getElementById("profile-img").textContent = usuario.avatar || "/img/Avatar0.png";
+
             // Si usuario.tareasCompletadas es indefinido, se asume 0.
             let tareasCompletadas = usuario.tareasCompletadas || 0;
 
