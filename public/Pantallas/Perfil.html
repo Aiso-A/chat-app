@@ -93,6 +93,9 @@
             // Actualiza el correo electrónico
             document.getElementById("email").textContent = usuario.email || "";
 
+            //Actualiza la imagen de perfil
+            document.getElementById("profile-img").src = usuario.avatar|| '/img/Avatar0.png'; 
+
             // Si usuario.tareasCompletadas es indefinido, se asume 0.
             let tareasCompletadas = usuario.tareasCompletadas || 0;
 
@@ -107,7 +110,7 @@
 
         // Actualiza ambos elementos de imagen
         document.getElementById("user-avatar").src = avatarURL;
-        document.getElementById("profile-img").src = avatarURL;
+        
 
             // Calcula cuántas tareas faltan para desbloquear la siguiente imagen.
              const mod = tareasCompletadas % 5;
